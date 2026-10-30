@@ -6,7 +6,7 @@ import { POLLING_RATES, encodePolling } from '/src/polling.mjs';
 import { buildMouseMap } from '/mouse-map.mjs';
 const $ = id => document.getElementById(id);
 const logs = []; let packets = [], template, selected, busy = false;
-let noticeTimer, developerMode=false, previewOnly=false;
+let noticeTimer, developerMode=false, previewOnly=false, measurementAvailable=false, batteryBusy=false;
 function notice(message, error = false) {
   clearTimeout(noticeTimer);$('notice').hidden=false;$('notice').textContent=message;$('notice').classList.toggle('error',error);
   if(!error)noticeTimer=setTimeout(()=>$('notice').hidden=true,5000);
@@ -29,24 +29,42 @@ function log(kind, detail) {
   $('log-count').textContent=`${logs.length} entries`;
 }
 let transport = new WebHidTransport(navigator.hid, log), nativeMode = false, nativePlatform = null;
-function disconnected() { $('connect').hidden = false; $('disconnect').hidden = true; $('device-state').textContent = 'Receiver disconnected'; updateMode(); }
+function disconnected() { $('connect').hidden = false; $('disconnect').hidden = true; $('device-state').textContent = 'Receiver disconnected';$('battery-label').textContent='Battery —';$('battery-state').title='Reconnect the mouse to read its battery';$('battery-state').classList.remove('low');$('battery-refresh').disabled=true; updateMode(); }
 transport.onLost = disconnected;
 async function localRequest(path, options) {
   const response = await fetch(path, options ? { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Rapoo-Token': options.token }, body: JSON.stringify(options.body) } : undefined);
   const data = await response.json(); if (!response.ok || data.error) throw Error(data.error || 'Local device request failed'); return data;
 }
 function connectionError(e) {
-  if (nativePlatform === 'darwin' && /HID access|configuration interface/i.test(e.message) && /not permitted|denied|0xe00002e2/i.test(e.message)) {
+  if (nativePlatform === 'darwin' && /HID access|configuration interface|mouse-report measurement/i.test(e.message) && /not permitted|denied|0xe00002e2/i.test(e.message)) {
     $('device-state').textContent = 'Receiver detected · macOS access denied';
     $('permission-help').hidden = false;
+    return true;
   }
 }
 async function run(action) {
   if (busy) return; busy = true;
   document.querySelectorAll('button').forEach(b => b.disabled = true);
-  try { await action(); } catch (e) { connectionError(e); notice(e.message, true); log('ERROR', e.message); }
-  finally { busy = false; document.querySelectorAll('button').forEach(b => b.disabled = false); }
+  try { await action(); } catch (e) { const permission=connectionError(e); notice(permission?'Receiver access needs Input Monitoring permission. Follow the instructions below, then quit and reopen the preview or app.':e.message, true); log('ERROR', e.message); }
+  finally { busy = false; document.querySelectorAll('button').forEach(b => b.disabled = false); $('measure-rate').disabled=!measurementAvailable;$('battery-refresh').disabled=!nativeMode||!transport.device||batteryBusy; }
 }
+async function refreshBattery() {
+  if(batteryBusy || !nativeMode || !transport.device)return;
+  batteryBusy=true;$('battery-refresh').disabled=true;
+  try {
+    const result=await transport.battery();
+    if(!Number.isInteger(result.percent)||result.percent<0||result.percent>100)throw Error('Mouse returned an invalid percentage');
+    $('battery-label').textContent=`${result.percent}% battery`;
+    $('battery-state').title=`Reported by mouse · updated ${new Date(result.updatedAt).toLocaleTimeString()}`;
+    $('battery-state').classList.toggle('low',result.percent<=20);
+    log('BATTERY',`${result.percent}% · mouse-reported · ${result.updatedAt}`);
+  } catch(error) {
+    $('battery-label').textContent='Battery unavailable';$('battery-state').title=error.message;
+    $('battery-state').classList.remove('low');log('BATTERY UNAVAILABLE',error.message);
+  } finally {batteryBusy=false;$('battery-refresh').disabled=busy||!transport.device;}
+}
+$('battery-refresh').addEventListener('click',()=>run(refreshBattery));
+setInterval(()=>{if(!busy && !document.hidden)refreshBattery();},60000);
 function download(name, data) { const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 function settings() { return { stages: Array.from($('stage-inputs').querySelectorAll('input'), i => Number(i.value)), count: Number($('count').value), current: Number($('current').value) }; }
 function preview() {
@@ -119,10 +137,22 @@ function renderPolling() {
     button.addEventListener('click',()=>run(async()=>{
       const packet=packets.find(p=>p.payload?.startsWith('baa5a50430060000'));
       await sendOrPreview(encodePolling(hz,packet?fromHex(packet.payload):undefined),hz+' Hz polling rate');
-      if(!previewOnly){document.querySelectorAll('.polling-rate').forEach(el=>{const active=el===button;el.setAttribute('aria-pressed',String(active));el.classList.toggle('selected',active);});$('polling-current').textContent=hz+' Hz sent';}
+      if(!previewOnly){document.querySelectorAll('.polling-rate').forEach(el=>{const active=el===button;el.setAttribute('aria-pressed',String(active));el.classList.toggle('selected',active);});$('polling-current').textContent=hz+' Hz requested · unverified';$('rate-test-result').textContent='Rate command sent. Run a new measurement while moving continuously to check its effect.';}
     }));$('polling-rates').append(button);
   }
 }
+$('measure-rate').addEventListener('click',()=>run(async()=>{
+  $('measure-rate').textContent='Measuring… keep moving';
+  $('rate-test-result').textContent='Move the MT760L continuously in circles for six seconds. You can move outside this window.';
+  try {
+    const result=await localRequest('/api/native/measure-rate',{token:transport.token,body:{}});
+    log('READ-ONLY RATE MEASUREMENT',JSON.stringify(result));
+    $('rate-test-result').textContent=result.sufficient
+      ? `Observed ≈ ${Math.round(result.medianHz)} Hz · median ${result.medianMs.toFixed(2)} ms · active mean ${Math.round(result.meanHz)} Hz. Middle 80%: ${result.p10Ms.toFixed(2)}–${result.p90Ms.toFixed(2)} ms. ${result.intervals} intervals; ${result.excludedIntervals} pauses/outliers excluded. This does not read the configured setting.`
+      : `Too little movement to estimate a rate (${result.movementReports} moving reports). Keep the mouse moving continuously for the whole test and retry.`;
+  } catch(error) { $('rate-test-result').textContent=error.message;if(nativePlatform==='darwin' && /denied|Input Monitoring/i.test(error.message))$('permission-help').hidden=false; throw error; }
+  finally { $('measure-rate').textContent='Measure actual reports · 6 seconds'; }
+}));
 async function sendOrPreview(bytes, label) {
   if (previewOnly) { log('PREVIEW · NO DEVICE WRITE', `${label} · ${toHex(bytes)}`); notice('Preview recorded in Developer tools. Nothing sent.'); return; }
   if(!transport.device)await connectMouse();
@@ -153,6 +183,7 @@ async function connectMouse(){
   $('connect').hidden = true; $('disconnect').hidden = false;
   $('permission-help').hidden = true;
   log('CONNECTED', `${device.productName} · ${device.vendorId.toString(16)}:${device.productId.toString(16)}. Connection opened; no commands sent.`);
+  await refreshBattery();
   return device;
 }
 $('connect').addEventListener('click',()=>run(async()=>{await connectMouse();notice('Mouse connected. Choose a DPI stage or apply a button action.');}));
@@ -177,11 +208,14 @@ $('descriptor').addEventListener('click', () => run(async () => {
 }));
 $('support').textContent = navigator.hid ? 'WebHID available · select the USB receiver' : 'Device control needs desktop Chrome / Edge. Preview works here.';
 await run(async () => {
+  const info=await(await fetch('/api/info')).json();$('local-preview').hidden=!info.development;
   const response = await fetch('/api/capture'); if (!response.ok) throw Error('Could not load the supplied capture');
   packets = await response.json(); loadDpi(packets.find(p => p.frame === 12),true); renderPackets();
   renderButtons(); renderPolling();
   const native = new NativeTransport(localRequest, log);
   const status = await native.status();
+  measurementAvailable=Boolean(status.measurementAvailable);
+  $('rate-test-support').textContent=measurementAvailable?'Native macOS HID · read only':'Native measurement is currently available in the local Mac preview.';
   if (status.available) {
     transport = native; nativeMode = true; nativePlatform = status.platform;
     const receiver = status.devices?.find(d => d.compatible);
