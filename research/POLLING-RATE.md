@@ -1,6 +1,6 @@
 # MT760 polling rate evidence
 
-The 0.2.0 selector offers 125, 250, 500 and 1000 Hz over the receiver. No polling change is sent on app startup. The selected rate is an app-side indication, not readback or a measured rate. Physical behavior of the new selector still needs testing.
+The 0.2.0 selector offers 125, 250, 500 and 1000 Hz over the receiver. No polling change is sent on app startup. The selected rate is an app-side indication, not readback or a measured rate. On 2026-10-31 the owner reported that the new native Mac measurement shows the correct values after enabling access. A subsequent visible preview result showed 250 Hz requested, median 4.00 ms (250 Hz), active mean 250 Hz, middle 80% 3.98–4.02 ms across 1508 intervals with no excluded intervals. Firmware readback remains unavailable.
 
 ## Mapping and write layout
 
@@ -27,3 +27,9 @@ Research reproduction, using the original supplied DLL and generated disassembly
 _toolchain/portable-node-macos-arm64/node scripts/inspect-disassembly.mjs 6fd90620 6fd90665
 _toolchain/portable-node-macos-arm64/node scripts/inspect-disassembly.mjs 6feb8140 6feb81c8
 ```
+
+## Local diagnostic added after the 0.2.0 preview
+
+A flat 120 Hz website result was reported by the owner. Browser input coalescing can hide higher device rates, so this result alone does not validate or disprove the command. No speculative change was made to the capture/DLL-based encoder. The local Mac preview now includes a bounded native report-timestamp measurement; see docs/LOCAL-TESTING.md. The owner subsequently reported correct native measurements on this Mac after enabling access. Transmission and measured behavior remain separate; this is not firmware readback or Windows validation.
+
+The 250 Hz result above was visible in the local preview during the owner’s test. A subsequent screenshot shows 500 Hz requested, median 2.00 ms (500 Hz), active mean 499 Hz, middle 80% 1.99–2.01 ms across 3034 intervals with no excluded intervals. That screenshot is saved locally as `docs/local-preview-nord-polling.png`. No new GitHub release or upload was made.
