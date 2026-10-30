@@ -1,5 +1,7 @@
 # MT760L protocol notes
 
+Version note: these are historical evidence notes. The user subsequently confirmed the original Mac and Windows packages work. Version 0.2.0 removes fixed-line scrolling and adds native desktop windows and a polling selector; see `POLLING-RATE.md` and current development docs for the active implementation.
+
 Confidence labels: **observed** means bytes directly present in the capture; **static inference** means backed by DLL code but not hardware-tested; **unknown** means it must not be represented as a confirmed feature.
 
 ## Live receiver inspection — 2026-10-30
