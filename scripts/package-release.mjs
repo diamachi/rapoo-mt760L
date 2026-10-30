@@ -15,9 +15,9 @@ try{await access(stage);throw Error(`Staging folder exists: ${stage}. Bump the v
 await mkdir(stage,{recursive:true});
 async function files(dir){let result=[];for(const entry of await readdir(path.join(root,dir),{withFileTypes:true})){if(entry.name==='.DS_Store')continue;const p=path.posix.join(dir,entry.name);if(entry.isDirectory())result.push(...await files(p));else if(!p.endsWith('.exe'))result.push(p);}return result.sort();}
 const appFiles=await files('app');
-const docs=['README.md','LICENSE','THIRD_PARTY_NOTICES.md','docs/FILES.md','docs/PUBLISHING.md','docs/DEVELOPMENT.md','research/PROTOCOL.md','research/BUTTONS-AND-SCROLL.md','research/POLLING-RATE.md'];
+const docs=['README.md','LICENSE','THIRD_PARTY_NOTICES.md','docs/FILES.md','docs/PUBLISHING.md','docs/DEVELOPMENT.md','docs/LOCAL-TESTING.md','research/PROTOCOL.md','research/BUTTONS-AND-SCROLL.md','research/POLLING-RATE.md','research/BATTERY.md'];
 const shared=[...docs,...appFiles,'scripts/desktop-server.mjs','scripts/decode-capture.mjs'];
-const source=[...shared,'.gitignore','.github/workflows/release.yml','start-macos.command','start-windows.cmd','start-linux.sh','test-macos.command',...await files('packaging'),...await files('scripts')];
+const source=[...shared,'AGENTS.md','.gitignore','.github/workflows/release.yml','start-macos.command','start-windows.cmd','start-linux.sh','test-macos.command',...await files('packaging'),...await files('scripts')];
 let dest=stage;
 if(target==='macos-arm64'){dest=path.join(stage,'Rapoo Local.app/Contents/Resources');await mkdir(path.join(stage,'Rapoo Local.app/Contents/MacOS'),{recursive:true});await cp(path.join(root,'packaging/macos/Info.plist'),path.join(stage,'Rapoo Local.app/Contents/Info.plist'));}
 for(const p of new Set(target==='source'?source:shared)){const to=path.join(dest,p);await mkdir(path.dirname(to),{recursive:true});await cp(path.join(root,p),to);if(p.endsWith('.command')||p==='start-linux.sh')await chmod(to,0o755);}
@@ -28,10 +28,14 @@ if(target!=='source'){
   await writeFile(path.join(stage,'START-HERE.txt'),target==='macos-arm64'?'Open the DMG and drag Rapoo Local to Applications, then open it. The app has its own window. Close the window or press Command+Q to quit. No Terminal or external browser is used.\n':'Run the setup executable, then open Rapoo Local from Start. It has its own window and stops its service when closed. Setup adds WebView2 only if missing (internet required in that case).\n');
 }
 if(target==='macos-arm64'){
+  await cp(path.join(root,'packaging/assets/AppIcon.icns'),path.join(dest,'AppIcon.icns'));
   const executable=path.join(stage,'Rapoo Local.app/Contents/MacOS/RapooLocal');
   const cache=path.join(root,'_toolchain/build-cache/swift');await mkdir(cache,{recursive:true});
   execFileSync('/usr/bin/xcrun',['swiftc','-swift-version','5','-target','arm64-apple-macosx14.0','-module-cache-path',cache,'-O','-framework','AppKit','-framework','WebKit',path.join(root,'packaging/macos/main.swift'),'-o',executable],{stdio:'inherit'});
   execFileSync(executable,['--self-test'],{stdio:'inherit'});
+  const rateHelper=path.join(dest,'app/native/macos-rate');
+  execFileSync('/usr/bin/xcrun',['swiftc','-swift-version','5','-target','arm64-apple-macosx14.0','-module-cache-path',cache,'-O','-framework','IOKit',path.join(root,'app/native/macos-rate.swift'),'-o',rateHelper],{stdio:'inherit'});
+  execFileSync(rateHelper,['--self-test'],{stdio:'inherit'});
 }
 if(target==='windows-x64'){
   execFileSync('powershell.exe',['-NoProfile','-File',path.join(root,'packaging/windows/build-launcher.ps1'),'-OutputDirectory',stage],{stdio:'inherit'});

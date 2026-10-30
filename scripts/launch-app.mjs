@@ -10,7 +10,7 @@ function openBrowser() {
   child.on('error', () => console.log(`Open ${url} in your browser.`));
   child.unref();
 }
-const server = createAppServer();
+const server = createAppServer({ development: true });
 server.once('error', async error => {
   if (error.code === 'EADDRINUSE') {
     try {

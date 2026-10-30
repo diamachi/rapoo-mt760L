@@ -1,6 +1,6 @@
 // Owned exclusively by the desktop window. No shell or browser is launched.
 import { createAppServer } from '../app/server.mjs';
-const server = createAppServer();
+const server = createAppServer({ development: process.env.RAPOO_DEVELOPMENT === '1' });
 const parent = Number(process.env.RAPOO_PARENT_PID);
 if (!Number.isInteger(parent) || parent < 1) throw Error('Desktop parent PID required');
 server.on('error', error => { console.error(error.message); process.exitCode = 1; });
