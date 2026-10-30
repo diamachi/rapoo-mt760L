@@ -2,6 +2,45 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { createAppServer } from '../server.mjs';
+test('battery reads require an authorized connected receiver, decode real reply and cache briefly',async()=>{
+  let reads=0;
+  const native=async op=>op==='list'?{devices:[{id:'123',compatible:true}]}:op==='battery'?(reads++,{batteryReport:'01014c'}):{device:{id:'123'}};
+  const server=createAppServer({native,platform:'darwin'});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${server.address().port}`;
+  try {
+    const status=await(await fetch(url+'/api/native/status')).json();
+    const post=(route,body={},token=status.token)=>fetch(url+'/api/native/'+route,{method:'POST',headers:{Origin:url,'X-Rapoo-Token':token},body:JSON.stringify(body)});
+    assert.equal((await post('battery',{id:'123'},'bad')).status,403);
+    assert.equal((await post('battery',{id:'123'})).status,400);assert.equal(reads,0);
+    await post('connect',{id:'123'});
+    const result=await(await post('battery',{id:'123'})).json();assert.equal(result.percent,76);assert.equal(result.source,'mouse-reported');assert.ok(result.updatedAt);
+    assert.equal((await(await post('battery',{id:'123'})).json()).percent,76);assert.equal(reads,1);
+    assert.equal((await post('battery',{id:'456'})).status,400);
+    await post('disconnect');assert.equal((await post('battery',{id:'123'})).status,400);
+  } finally {await new Promise(resolve=>server.close(resolve));}
+});
+test('read-only rate measurement requires session authorization, excludes concurrent writes and reports development mode',async()=>{
+  let finish, started;
+  const measuring=new Promise(resolve=>started=resolve);
+  const native=async op=>op==='list'?{devices:[{id:'123',compatible:true}]}:{device:{id:'123'}};
+  const measure=()=>{started();return new Promise(resolve=>finish=resolve);};
+  const server=createAppServer({native,measure,platform:'darwin',development:true});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${server.address().port}`;
+  try {
+    assert.equal((await(await fetch(url+'/api/info')).json()).development,true);
+    const status=await(await fetch(url+'/api/native/status')).json();assert.equal(status.measurementAvailable,true);
+    const post=(route,body={},token=status.token)=>fetch(url+'/api/native/'+route,{method:'POST',headers:{Origin:url,'X-Rapoo-Token':token},body:JSON.stringify(body)});
+    assert.equal((await post('measure-rate',{},'bad')).status,403);
+    assert.equal((await fetch(url+'/api/native/measure-rate')).status,405);
+    await post('connect',{id:'123'});
+    const pending=post('measure-rate');await measuring;
+    assert.equal((await post('measure-rate')).status,409);
+    const blocked=await post('send',{id:'123',hex:'baa5a504300600000404ffff0000000000000000000000000000000000000000'});
+    assert.equal(blocked.status,400);assert.match((await blocked.json()).error,/measurement/);
+    finish({sufficient:false,reportsSent:0});assert.equal((await(await pending).json()).reportsSent,0);
+  } finally {if(finish)finish({});await new Promise(resolve=>server.close(resolve));}
+});
 test('serves local app and capture; rejects unexpected hosts, mutations and unlisted files', async () => {
   const server = createAppServer(); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const url = `http://127.0.0.1:${server.address().port}`;
