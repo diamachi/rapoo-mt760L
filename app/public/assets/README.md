@@ -1,5 +1,8 @@
-# Mouse illustration
+# MT760L product image
 
-`mouse.svg` is an original code-drawn ergonomic mouse schematic created for this project. It is covered by the root MIT license and used in the header and interactive button map. It is a schematic, not a manufacturer CAD model.
+The original cached product photo mt760l.webp is restored at the user's request in version 0.2.0. It is served locally in the header and interactive map; there are no runtime image downloads.
 
-The private research workspace may also contain an older `mt760l.webp` cached from Rapoo Europe. It is unused by the app and explicitly excluded from all release archives because no redistribution license was established. Original source: https://www.rapoo-eu.com/product/mt760l/ .
+Source page: https://www.rapoo-eu.com/product/mt760l/
+Source asset: https://www.rapoo-eu.com/wp-content/uploads/2024/05/MT760L_01.png--e1746094024550.webp
+
+Copyright belongs to Rapoo/the original owner. The photo is not covered by the app source's MIT license. Attribution is not a claim of a redistribution license. The unused generated schematic was removed.
