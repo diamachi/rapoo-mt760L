@@ -6,6 +6,7 @@ AppId={{7055C9A1-591C-4AF2-9B3B-44A0BEF23C72}
 AppName=Rapoo Local
 AppVersion={#AppVersion}
 AppPublisher=Rapoo Local contributors
+SetupIconFile=..\assets\app-icon.ico
 DefaultDirName={localappdata}\Programs\Rapoo Local
 DefaultGroupName=Rapoo Local
 PrivilegesRequired=lowest

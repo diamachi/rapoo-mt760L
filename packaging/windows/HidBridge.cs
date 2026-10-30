@@ -23,6 +23,7 @@ class HidBridge {
     [DllImport("hid.dll")] static extern int HidP_GetCaps(IntPtr data, out Caps caps);
     [DllImport("hid.dll")] static extern int HidP_GetValueCaps(int type, IntPtr caps, ref ushort length, IntPtr data);
     [DllImport("hid.dll", SetLastError=true)] static extern bool HidD_SetOutputReport(SafeFileHandle device, byte[] report, int length);
+    [DllImport("hid.dll", SetLastError=true)] static extern bool HidD_GetInputReport(SafeFileHandle device, byte[] report, int length);
     [DllImport("setupapi.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern IntPtr SetupDiGetClassDevs(ref Guid guid, IntPtr enumerator, IntPtr parent, uint flags);
     [DllImport("setupapi.dll", SetLastError=true)] static extern bool SetupDiEnumDeviceInterfaces(IntPtr set, IntPtr device, ref Guid guid, uint index, ref InterfaceData data);
     [DllImport("setupapi.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern bool SetupDiGetDeviceInterfaceDetail(IntPtr set, ref InterfaceData data, IntPtr detail, uint length, out uint required, IntPtr device);
@@ -94,13 +95,25 @@ class HidBridge {
             if(args.Length<1)throw new Exception("Expected list, probe or send");
             var devices=Devices();
             if(args[0]=="list") {Console.WriteLine(json.Serialize(new {devices=devices.ConvertAll(d=>d.Public())}));return 0;}
-            if(args.Length<2 || (args[0]!="probe" && args[0]!="send"))throw new Exception("Unsupported operation");
+            if(args.Length<2 || (args[0]!="probe" && args[0]!="send" && args[0]!="battery"))throw new Exception("Unsupported operation");
             var device=devices.Find(d=>d.id==args[1] && d.compatible);if(device==null)throw new Exception("Compatible receiver not found. Reconnect the 2.4 GHz receiver.");
-            using(var handle=CreateFile(device.path,0x40000000,3,IntPtr.Zero,3,0,IntPtr.Zero)) {
+            using(var handle=CreateFile(device.path,args[0]=="battery"?0xc0000000:0x40000000,3,IntPtr.Zero,3,0,IntPtr.Zero)) {
                 if(handle.IsInvalid)throw new Exception("Windows denied receiver access: "+new Win32Exception(Marshal.GetLastWin32Error()).Message);
                 if(args[0]=="send") {
                     if(args.Length!=3)throw new Exception("Expected report bytes");
                     var bytes=Report(args[2]);if(!HidD_SetOutputReport(handle,bytes,bytes.Length))throw new Exception("Receiver output report failed: "+new Win32Exception(Marshal.GetLastWin32Error()).Message);
+                }
+                if(args[0]=="battery") {
+                    var request=new byte[32];request[0]=0xba;request[1]=0xa5;request[2]=0xaa;
+                    var reply=new byte[32];
+                    for(int attempt=0;attempt<3;attempt++) {
+                        if(!HidD_SetOutputReport(handle,request,32))throw new Exception("Battery status request failed");
+                        System.Threading.Thread.Sleep(50);Array.Clear(reply,0,reply.Length);reply[0]=0xba;
+                        if(!HidD_GetInputReport(handle,reply,32))throw new Exception("Battery status read failed");
+                        if(reply[0]==1)break;
+                    }
+                    if(reply[0]!=1)throw new Exception("Mouse battery response timed out. Wake the mouse and refresh.");
+                    Console.WriteLine(json.Serialize(new {batteryReport=BitConverter.ToString(reply).Replace("-","").ToLowerInvariant()}));return 0;
                 }
             }
             Console.WriteLine(json.Serialize(new {device=device.Public(),status=args[0]=="send"?"sent-unverified":"opened"}));return 0;

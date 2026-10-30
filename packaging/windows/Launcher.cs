@@ -19,7 +19,8 @@ class DesktopWindow : Form {
     readonly string root=AppDomain.CurrentDomain.BaseDirectory;
     public DesktopWindow(bool smokeTest) {
         smoke=smokeTest;Text="Rapoo Local";Width=1200;Height=820;MinimumSize=new Size(760,600);StartPosition=FormStartPosition.CenterScreen;
-        BackColor=Color.FromArgb(20,30,25);
+        BackColor=Color.FromArgb(46,52,64);
+        Icon=System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         Shown+=async (s,e)=>await StartApp();
         FormClosed+=(s,e)=>StopServer();
     }

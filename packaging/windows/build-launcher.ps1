@@ -18,7 +18,7 @@ if (!$licenses) { throw 'WebView2 SDK license not found' }
 Copy-Item $licenses[0].FullName (Join-Path $OutputDirectory 'WebView2-LICENSE.txt') -Force
 & $compiler /nologo /target:exe /platform:x64 /reference:System.Web.Extensions.dll "/out:$OutputDirectory/app/native/windows-hid.exe" (Join-Path $PSScriptRoot 'HidBridge.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Native HID bridge compilation failed' }
-& $compiler /nologo /target:winexe /platform:x64 /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Net.Http.dll /reference:System.Web.Extensions.dll "/reference:$($forms.FullName)" "/reference:$core" "/out:$OutputDirectory/Rapoo Local.exe" (Join-Path $PSScriptRoot 'Launcher.cs')
+& $compiler /nologo /target:winexe /platform:x64 "/win32icon:$PSScriptRoot/../assets/app-icon.ico" /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Net.Http.dll /reference:System.Web.Extensions.dll "/reference:$($forms.FullName)" "/reference:$core" "/out:$OutputDirectory/Rapoo Local.exe" (Join-Path $PSScriptRoot 'Launcher.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Desktop launcher compilation failed' }
 & "$OutputDirectory/app/native/windows-hid.exe" --self-test
 if ($LASTEXITCODE -ne 0) { throw 'Native Windows structure self-test failed' }
