@@ -11,7 +11,7 @@ export const MOUSE_PINS = [
 ];
 export function buildMouseMap(container, buttons, select) {
   const stage=document.createElement('div');stage.className='mouse-map-stage';
-  const image=document.createElement('img');image.src='/assets/mouse.svg';image.alt='Rapoo MT760L, top view';image.className='mouse-map-image';image.draggable=false;
+  const image=document.createElement('img');image.src='/assets/mt760l.webp';image.alt='Rapoo MT760L, top view';image.className='mouse-map-image';image.draggable=false;
   const eyebrow=document.createElement('span');eyebrow.className='map-view-label';eyebrow.textContent='MT760L / TOP VIEW';
   const lines=document.createElementNS('http://www.w3.org/2000/svg','svg');lines.setAttribute('viewBox','0 0 100 100');lines.setAttribute('preserveAspectRatio','none');lines.setAttribute('aria-hidden','true');lines.classList.add('map-connectors');
   stage.append(image,eyebrow,lines);

@@ -1,7 +1,8 @@
 import { fromHex, toHex, decodeDpi, encodeDpi, capturedWrite, addressOf } from '/src/protocol.mjs';
 import { WebHidTransport } from '/src/transport.mjs';
-import { NativeMacTransport } from '/src/native-client.mjs';
+import { NativeTransport } from '/src/native-client.mjs';
 import { BUTTONS, KEYS, actionsForButton, encodeButton } from '/src/buttons.mjs';
+import { POLLING_RATES, encodePolling } from '/src/polling.mjs';
 import { buildMouseMap } from '/mouse-map.mjs';
 const $ = id => document.getElementById(id);
 const logs = []; let packets = [], template, selected, busy = false;
@@ -27,7 +28,7 @@ function log(kind, detail) {
   if (logs.length > 500) { logs.shift(); $('logs').lastElementChild.remove(); }
   $('log-count').textContent=`${logs.length} entries`;
 }
-let transport = new WebHidTransport(navigator.hid, log), nativeMode = false;
+let transport = new WebHidTransport(navigator.hid, log), nativeMode = false, nativePlatform = null;
 function disconnected() { $('connect').hidden = false; $('disconnect').hidden = true; $('device-state').textContent = 'Receiver disconnected'; updateMode(); }
 transport.onLost = disconnected;
 async function localRequest(path, options) {
@@ -35,7 +36,7 @@ async function localRequest(path, options) {
   const data = await response.json(); if (!response.ok || data.error) throw Error(data.error || 'Local device request failed'); return data;
 }
 function connectionError(e) {
-  if (nativeMode && /HID access|configuration interface/i.test(e.message) && /not permitted|denied|0xe00002e2/i.test(e.message)) {
+  if (nativePlatform === 'darwin' && /HID access|configuration interface/i.test(e.message) && /not permitted|denied|0xe00002e2/i.test(e.message)) {
     $('device-state').textContent = 'Receiver detected · macOS access denied';
     $('permission-help').hidden = false;
   }
@@ -112,21 +113,16 @@ function renderButtons() {
   }
   selectButton(0);
 }
-function renderScroll(state) {
-  $('scroll-state').textContent=state?.running?`Running · ${state.lines} lines`:'Stopped';
-  if(state?.running)$('scroll-lines').value=state.lines;
+function renderPolling() {
+  for(const hz of POLLING_RATES){
+    const button=document.createElement('button');button.type='button';button.className='polling-rate';button.textContent=hz+' Hz';button.setAttribute('aria-pressed','false');
+    button.addEventListener('click',()=>run(async()=>{
+      const packet=packets.find(p=>p.payload?.startsWith('baa5a50430060000'));
+      await sendOrPreview(encodePolling(hz,packet?fromHex(packet.payload):undefined),hz+' Hz polling rate');
+      if(!previewOnly){document.querySelectorAll('.polling-rate').forEach(el=>{const active=el===button;el.setAttribute('aria-pressed',String(active));el.classList.toggle('selected',active);});$('polling-current').textContent=hz+' Hz sent';}
+    }));$('polling-rates').append(button);
+  }
 }
-setInterval(async()=>{if(nativeMode&&$('scroll-state').textContent.startsWith('Running')){try{renderScroll(await localRequest('/api/native/scroll-status'));}catch{}}},3000);
-$('scroll-start').addEventListener('click',()=>run(async()=>{
-  if(!nativeMode)throw Error('Fixed-line scrolling currently requires the local macOS helper.');
-  const lines=Number($('scroll-lines').value);if(!Number.isInteger(lines)||lines<1||lines>100)throw Error('Choose 1–100 lines per wheel notch');
-  try {const status=await localRequest('/api/native/scroll-start',{token:transport.token,body:{lines}});renderScroll(status);log('SCROLL HELPER STARTED',`${lines} logical lines per raw vertical HID wheel increment · all mouse wheels · trackpad unchanged`);notice('Fixed-line scrolling is running. Use Stop to restore normal scrolling.');}
-  catch(error){$('scroll-help').textContent=error.message;throw error;}
-}));
-$('scroll-stop').addEventListener('click',()=>run(async()=>{
-  if(!nativeMode)return;
-  renderScroll(await localRequest('/api/native/scroll-stop',{token:transport.token,body:{}}));log('SCROLL HELPER STOPPED','Normal mouse scrolling restored.');notice('Fixed-line scrolling stopped.');
-}));
 async function sendOrPreview(bytes, label) {
   if (previewOnly) { log('PREVIEW · NO DEVICE WRITE', `${label} · ${toHex(bytes)}`); notice('Preview recorded in Developer tools. Nothing sent.'); return; }
   if(!transport.device)await connectMouse();
@@ -160,7 +156,7 @@ async function connectMouse(){
   return device;
 }
 $('connect').addEventListener('click',()=>run(async()=>{await connectMouse();notice('Mouse connected. Choose a DPI stage or apply a button action.');}));
-$('disconnect').addEventListener('click', () => run(async () => { await transport.close(); disconnected(); notice('Disconnected. Preview mode is active.'); }));
+$('disconnect').addEventListener('click', () => run(async () => { await transport.close(); disconnected(); notice('Disconnected. Applying a setting reconnects the receiver.'); }));
 $('apply').addEventListener('click', () => run(() => sendOrPreview(encodeDpi(template, settings()), 'DPI block 0x638')));
 $('count').addEventListener('change',()=>{if(Number($('current').value)>Number($('count').value))$('current').value=$('count').value;preview();});
 $('filter').addEventListener('change', renderPackets);
@@ -183,20 +179,19 @@ $('support').textContent = navigator.hid ? 'WebHID available · select the USB r
 await run(async () => {
   const response = await fetch('/api/capture'); if (!response.ok) throw Error('Could not load the supplied capture');
   packets = await response.json(); loadDpi(packets.find(p => p.frame === 12),true); renderPackets();
-  renderButtons();
-  const native = new NativeMacTransport(localRequest, log);
+  renderButtons(); renderPolling();
+  const native = new NativeTransport(localRequest, log);
   const status = await native.status();
   if (status.available) {
-    transport = native; nativeMode = true;
-    renderScroll(status.scroll);
+    transport = native; nativeMode = true; nativePlatform = status.platform;
     const receiver = status.devices?.find(d => d.compatible);
-    $('support').textContent = 'Direct macOS HID · no browser device chooser required';
+    $('support').textContent = 'Native '+(status.platform==='win32'?'Windows':'macOS')+' HID · receiver access';
     if (receiver) {
       $('device-state').textContent = '2.4 GHz receiver detected · 24ae:1870';
-      log('RECEIVER DETECTED', `${receiver.productName} · configuration report BA · ${status.devices.length} HID interfaces. Click Connect receiver to test access.`);
+      log('RECEIVER DETECTED', `${receiver.productName} · configuration report BA · ${status.devices.length} HID interfaces. No settings sent during connection.`);
       await connectMouse();
     } else {
-      $('device-state').textContent = 'Receiver not detected by macOS';
+      $('device-state').textContent = 'Receiver not detected';
       notice(status.error || 'Plug in the MT760L 2.4 GHz USB receiver, then click Connect receiver to scan again.', Boolean(status.error));
     }
   }
