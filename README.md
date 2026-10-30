@@ -1,5 +1,7 @@
 # Rapoo Local
 
+**Current local work:** open `preview/Rapoo Local Preview.app` to test the Nord-style dark theme and native Mac rate measurement, reported battery percentage and mouse app icon without reinstalling. UI edits reload with Command+R. See [local testing](docs/LOCAL-TESTING.md). These changes have not been published; releases require your explicit approval after testing.
+
 A lightweight desktop manager for the Rapoo MT760L and its 2.4 GHz receiver. Version **0.2.0** has its own application window on macOS and Windows. No Terminal, command window or external browser is needed for normal use. Closing the window stops the app's local service.
 
 ## Install
@@ -23,7 +25,7 @@ The app displays a saved DPI profile and suggested button defaults, not values r
 
 ## Compatibility and validation
 
-The user confirmed the earlier Mac and Windows packages work with this receiver (`24ae:1870`). The new desktop release adds native Windows HID access to support the embedded view, and the new polling selector still needs a physical check. Build tests and window smoke tests do not establish every physical action's effect. Bluetooth, other mouse models and Intel Mac are not verified.
+The user confirmed the earlier Mac and Windows packages work with this receiver (`24ae:1870`). The new desktop release adds native Windows HID access to support the embedded view, and the owner reports that native Mac measurements now show the expected polling values. Build tests and window smoke tests do not establish every physical action's effect. Bluetooth, other mouse models and Intel Mac are not verified.
 
 Mac HID uses portable Node 26.4 FFI with system IOKit/CoreFoundation. Windows desktop HID uses the bundled C# bridge and Windows HID APIs, with descriptor validation for output report BA/31 payload bytes. No scrolling event tap or keyboard input listener is installed.
 
