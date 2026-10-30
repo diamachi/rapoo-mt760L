@@ -1,4 +1,4 @@
-name: Build portable apps
+name: Build desktop apps
 on:
   workflow_dispatch:
   push:
@@ -23,10 +23,27 @@ jobs:
           node-version: '26.4.0'
       - name: Fetch and verify portable runtime
         run: node scripts/fetch-runtime.mjs ${{ matrix.target }}
-      - name: Test source (no physical device required)
+      - name: Test source without device writes
         run: node --test app/test/*.test.mjs
-      - name: Package app
+      - name: Build desktop app and installer
         run: node scripts/package-release.mjs ${{ matrix.target }}
+      - name: Mac window and service lifecycle smoke test
+        if: matrix.target == 'macos-arm64'
+        shell: bash
+        run: |
+          version=$(node -p 'JSON.parse(require("fs").readFileSync("app/package.json")).version')
+          "dist/Rapoo-Local-$version-macos-arm64/Rapoo Local.app/Contents/MacOS/RapooLocal" --smoke-test
+          node --input-type=module -e 'try { await fetch("http://127.0.0.1:8765/api/info"); process.exit(1); } catch {}'
+      - name: Windows window and service lifecycle smoke test
+        if: matrix.target == 'windows-x64'
+        shell: pwsh
+        run: |
+          $version = (Get-Content app/package.json | ConvertFrom-Json).version
+          $app = Resolve-Path "dist/Rapoo-Local-$version-windows-x64/Rapoo Local.exe"
+          $process = Start-Process -FilePath $app -ArgumentList '--smoke-test' -PassThru
+          if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Desktop smoke test timed out' }
+          if ($process.ExitCode -ne 0) { throw 'Desktop smoke test failed' }
+          if (Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue) { throw 'Desktop left its app service running' }
       - name: Package source
         if: matrix.target == 'macos-arm64'
         run: node scripts/package-release.mjs source
@@ -35,5 +52,7 @@ jobs:
           name: Rapoo-Local-${{ matrix.target }}
           path: |
             dist/*.zip
+            dist/*.dmg
+            dist/*setup.exe
             dist/*.sha256
           if-no-files-found: error
