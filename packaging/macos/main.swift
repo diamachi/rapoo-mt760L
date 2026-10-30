@@ -10,7 +10,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var closing = false
     var started = Date()
     let smoke = CommandLine.arguments.contains("--smoke-test")
-    let home = URL(string: "http://127.0.0.1:8765/")!
+    let workspace = Bundle.main.object(forInfoDictionaryKey: "RapooWorkspace") as? String
+    var preview: Bool { workspace != nil }
+    var port: Int { preview ? 8760 : 8765 }
+    var home: URL { URL(string: "http://127.0.0.1:\(port)/")! }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let menu = NSMenu()
@@ -26,10 +29,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
         edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        edit.addItem(.separator())
+        let reload = NSMenuItem(title: "Reload interface", action: #selector(reloadInterface), keyEquivalent: "r")
+        reload.target = self
+        edit.addItem(reload)
         editItem.submenu = edit
         NSApp.mainMenu = menu
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1200, height: 820), styleMask: [.titled,.closable,.miniaturizable,.resizable], backing: .buffered, defer: false)
-        window.title = "Rapoo Local"
+        window.title = preview ? "Rapoo Local · Local Preview" : "Rapoo Local"
         window.minSize = NSSize(width: 760, height: 600)
         window.delegate = self
         window.center()
@@ -44,14 +51,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         startServer()
     }
 
+    @objc func reloadInterface() { webView.reload() }
+
     func startServer() {
-        guard let resources = Bundle.main.resourceURL else { fail("Application resources are missing."); return }
+        guard let resources = workspace.map({ URL(fileURLWithPath: $0) }) ?? Bundle.main.resourceURL else { fail("Application resources are missing."); return }
         let process = Process()
         process.executableURL = resources.appendingPathComponent("_toolchain/portable-node-macos-arm64/node")
         process.arguments = [resources.appendingPathComponent("scripts/desktop-server.mjs").path]
         process.currentDirectoryURL = resources
         var env = ProcessInfo.processInfo.environment
-        env["RAPOO_PORT"] = "8765"
+        env["RAPOO_PORT"] = String(port)
+        env["RAPOO_DEVELOPMENT"] = preview ? "1" : "0"
         env["RAPOO_PARENT_PID"] = String(ProcessInfo.processInfo.processIdentifier)
         process.environment = env
         process.standardOutput = FileHandle.nullDevice
@@ -69,7 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         var request = URLRequest(url: home.appendingPathComponent("api/info"))
         request.timeoutInterval = 1
         URLSession.shared.dataTask(with: request) { [weak self] data, _, _ in
-            guard let data = data, let info = try? JSONSerialization.jsonObject(with: data) as? [String: Any], info["app"] as? String == "rapoo-local", info["version"] as? String == Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String else { return }
+            guard let data = data, let info = try? JSONSerialization.jsonObject(with: data) as? [String: Any], info["app"] as? String == "rapoo-local", (self?.preview == true || info["version"] as? String == Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) else { return }
             DispatchQueue.main.async {
                 guard let self = self, self.timer?.isValid == true, self.server?.isRunning == true else { return }
                 self.timer?.invalidate()
@@ -80,8 +90,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = navigationAction.request.url else { decisionHandler(.cancel); return }
-        if navigationAction.shouldPerformDownload && url.absoluteString.hasPrefix("blob:http://127.0.0.1:8765/") { decisionHandler(.download); return }
-        decisionHandler(url.scheme == "http" && url.host == "127.0.0.1" && url.port == 8765 ? .allow : .cancel)
+        if navigationAction.shouldPerformDownload && url.absoluteString.hasPrefix("blob:" + home.absoluteString) { decisionHandler(.download); return }
+        decisionHandler(url.scheme == "http" && url.host == "127.0.0.1" && url.port == port ? .allow : .cancel)
     }
     func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) { download.delegate = self }
     func download(_ download: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
@@ -118,7 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
 }
 
 if CommandLine.arguments.contains("--self-test") {
-    let resources = Bundle.main.resourceURL!
+    let resources = (Bundle.main.object(forInfoDictionaryKey: "RapooWorkspace") as? String).map({ URL(fileURLWithPath: $0) }) ?? Bundle.main.resourceURL!
     let files = ["scripts/desktop-server.mjs", "app/server.mjs", "_toolchain/portable-node-macos-arm64/node"]
     guard files.allSatisfy({ FileManager.default.fileExists(atPath: resources.appendingPathComponent($0).path) }) else { exit(1) }
     print("Rapoo Local desktop launcher OK")
