@@ -1,12 +1,6 @@
 name: Build desktop apps
 on:
   workflow_dispatch:
-    inputs:
-      release_tag:
-        description: 'Optional private prerelease tag, such as v0.2.0-preview.1'
-        required: false
-        default: ''
-        type: string
   push:
     tags: ['v*']
 permissions:
@@ -91,31 +85,3 @@ jobs:
             dist/*setup.exe
             dist/*.sha256
           if-no-files-found: error
-  release:
-    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
-    needs: package
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: Rapoo-Local-*
-          merge-multiple: true
-          path: release-files
-      - name: Verify downloads and publish prerelease
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
-        run: |
-          set -euo pipefail
-          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+$ ]] || { echo 'Use a preview tag'; exit 1; }
-          cd release-files
-          sha256sum -c ./*.sha256
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" ./* --clobber
-          else
-            gh release create "$RELEASE_TAG" ./* --target "$GITHUB_SHA" --prerelease --title 'Rapoo Local 0.2.0 preview' --notes 'Native Mac and Windows desktop apps with no terminal or external browser. Mac: open the DMG and drag to Applications. Windows: run the setup EXE and open from Start. Adds 125/250/500/1000 Hz polling selection, restores the original mouse photo, and removes fixed-line scrolling. Includes source, portable ZIPs and SHA-256 checksums. Windows setup adds Microsoft WebView2 only if missing; internet is required in that case. Automated source and desktop-window checks passed; new polling effects and the new native Windows HID path still need physical receiver validation. These preview packages are unsigned. The repository remains private.'
-          fi
