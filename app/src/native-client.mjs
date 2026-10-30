@@ -15,6 +15,10 @@ export class NativeTransport {
     await this.request('/api/native/send', { token: this.token, body: { id: this.device.id, hex: toHex(bytes) } });
     this.log('SENT · UNVERIFIED', toHex(bytes));
   }
+  async battery() {
+    if(!this.device)throw Error('Connect the receiver first');
+    return this.request('/api/native/battery',{token:this.token,body:{id:this.device.id}});
+  }
   async close() {
     if (this.token) await this.request('/api/native/disconnect', { token: this.token, body: {} });
     this.device = null;
