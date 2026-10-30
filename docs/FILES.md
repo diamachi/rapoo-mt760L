@@ -1,6 +1,6 @@
 # Source file guide
 
-This lists all 53 files in the 0.2.0 source package. Installed apps use native windows with hidden, owned local services; developer scripts are separate.
+This lists the files selected for the next source package (local working copy after 0.2.0). Installed apps use native windows with hidden, owned local services; developer scripts are separate.
 
 | File | Purpose |
 | --- | --- |
@@ -25,8 +25,8 @@ This lists all 53 files in the 0.2.0 source package. Installed apps use native w
 | `app/public/app.mjs` | UI behavior, local DPI profile, theme toggle, action selection, writes/previews, logs and native/WebHID transport choice. |
 | `app/public/assets/README.md` | Product photo provenance and copyright attribution. |
 | `app/public/assets/mt760l.webp` | Restored original Rapoo MT760L product photo; separately attributed, not covered by the source MIT license. |
-| `app/public/controls.css` | Button/shortcut and scrolling control styles. |
-| `app/public/index.html` | Accessible application structure: connection, DPI, visual buttons, scrolling, theme and hidden developer tools. |
+| `app/public/controls.css` | Button/shortcut control styles. |
+| `app/public/index.html` | Accessible application structure: connection, DPI, visual buttons, polling and native rate test, theme and hidden developer tools. |
 | `app/public/mouse-map.css` | Hotspot map, action panel and responsive layouts. |
 | `app/public/mouse-map.mjs` | Builds 11 selectable hotspots and side/underside callouts on the mouse schematic. |
 | `app/public/polish.css` | Compact controls, quick DPI cards, developer visibility and dark palette overrides. |
@@ -42,7 +42,7 @@ This lists all 53 files in the 0.2.0 source package. Installed apps use native w
 | `app/test/buttons-polling.test.mjs` | Captured polling-rate goldens, malformed rate rejection, all 11 button targets and action encoding checks. |
 | `app/test/hid-descriptor.test.mjs` | Real descriptor parsing and exclusion of non-configuration receiver interfaces. |
 | `app/test/protocol.test.mjs` | Synthetic PCAPNG reconstruction/parser checks, DPI byte goldens/validation, WebHID splitting and incompatible-device rejection. |
-| `app/test/server.test.mjs` | HTTP routes, origin/token/host protections, receiver probe-before-write and mock scroll lifecycle. |
+| `app/test/server.test.mjs` | HTTP routes, origin/token/host protections, receiver probe-before-write, protected rate measurement and concurrent-write exclusion. |
 | `scripts/decode-capture.mjs` | Dependency-free USBPcap/PCAPNG parser; raw-capture CLI needs separately supplied original input. |
 | `scripts/desktop-server.mjs` | Desktop-owned background service; monitors its parent and exits after window/app shutdown without starting a terminal or browser. |
 | `scripts/evidence.mjs` | Research-only capture/binary hashes, PE exports and evidence summaries from separately supplied local vendor inputs. |
@@ -57,6 +57,23 @@ This lists all 53 files in the 0.2.0 source package. Installed apps use native w
 | `packaging/windows/Launcher.cs` | Native WinForms/WebView2 app, hidden service lifecycle, app profile and singleton handling; includes self/smoke checks. |
 | `packaging/windows/build-launcher.ps1` | Windows-only SDK fetching, GUI/HID compilation, license copying and Microsoft bootstrapper signature verification. |
 | `packaging/windows/installer.iss` | Per-user Windows setup/uninstall, Start menu/optional desktop shortcut and WebView2 installation only when missing. |
+
+| `AGENTS.md` | Persistent project instructions: local testing, explicit release approval, portable tools and private handbook exclusion. |
+| `docs/LOCAL-TESTING.md` | Click-to-open local preview, reload workflow, native report measurements and permission instructions. |
+| `app/native/macos-rate.swift` | Six-second, read-only mouse HID timestamp sampler; no keyboard interface or settings writes. |
+| `app/src/rate-stats.mjs` | Summarizes observed report intervals, excludes pauses/outliers and refuses insufficient samples. |
+| `app/test/rate-stats.test.mjs` | Synthetic 125/250/500/1000 Hz timing, pause/outlier rejection and insufficient-movement checks. |
+| `scripts/build-preview.mjs` | Builds the local Mac preview and measurement helper using existing Apple tools; binds the window to this workspace. |
+
+| `app/src/battery.mjs` | Strict mouse-reported battery reply decoder; never estimates an unavailable percentage. |
+| `app/test/battery.test.mjs` | Live-reply golden, 0/100 boundaries, padded replies and invalid status/length/value rejection. |
+| `research/BATTERY.md` | Battery query/reply evidence, live 76% reading and platform validation limits. |
+| `app/public/assets/app-icon.svg` | Original ergonomic mouse icon in the Nord-style app palette; source for all icon formats. |
+| `packaging/assets/AppIcon.icns` | Generated multiresolution Mac application icon. |
+| `packaging/assets/app-icon.ico` | Generated multiresolution Windows executable/setup icon. |
+| `packaging/assets/app-icon-1024.png` | Generated 1024px PNG icon preview. |
+| `scripts/build-icons.mjs` | Rebuilds icon formats locally using existing AppKit, sips and iconutil. |
+| `scripts/render-icon.swift` | Renders the SVG source to a transparent PNG with AppKit. |
 
 ## Generated and preserved local files
 

@@ -1,6 +1,6 @@
 # Desktop builds and publication
 
-Version 0.2.0 replaces the terminal launchers used in the first preview with native desktop windows. The previous Mac and Windows packages were user-confirmed working; the new native Windows transport and polling controls need their own hardware validation.
+Version 0.2.0 replaces the terminal launchers used in the first preview with native desktop windows. The previous Mac and Windows packages were user-confirmed working; the new native Windows transport needs its own hardware validation. The owner reports expected polling values in the local native Mac measurement.
 
 ## Local Mac build
 
@@ -32,7 +32,8 @@ The setup bundle includes Microsoft's signed WebView2 bootstrapper; installation
 
 The workflow builds on macos-15 arm64 and windows-2025 x64 when manually dispatched or when a v-prefixed tag is pushed. It tests source, packages each desktop app, runs window smoke tests and publishes build artifacts. The Mac artifact includes source ZIP, app ZIP, DMG and checksums. The Windows artifact includes desktop ZIP, setup EXE and checksums. Artifacts wrap the inner release files, so extract the artifact ZIP before attaching downloads to a release.
 
-No workflow step publishes a release or changes repository visibility. The repository stays private until the owner explicitly changes it. Personal documentation must not be uploaded. Normal pushes to main don't automatically run the manual/tag-only workflow.
+The workflow builds artifacts only. It has read-only repository permissions and no release-publishing job. Test the local working copy and generated packages first. Create or update a GitHub release only after the owner has finished checking and explicitly approved that release. Do not infer approval from a request to implement a feature. No repository visibility changes are automatic. Personal documentation must not be uploaded. Normal pushes to main do not automatically run the manual/tag-only workflow. Packaging failures also appear in the job summary.
+
 
 ## Validation before release
 
