@@ -26,7 +26,20 @@ jobs:
       - name: Test source without device writes
         run: node --test app/test/*.test.mjs
       - name: Build desktop app and installer
-        run: node scripts/package-release.mjs ${{ matrix.target }}
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/package-release.mjs ${{ matrix.target }} 2>&1 | tee desktop-build.log
+      - name: Show packaging diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f desktop-build.log ]; then
+            echo '### Desktop packaging diagnostics' >> "$GITHUB_STEP_SUMMARY"
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            tail -c 24000 desktop-build.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Mac window and service lifecycle smoke test
         if: matrix.target == 'macos-arm64'
         shell: bash
