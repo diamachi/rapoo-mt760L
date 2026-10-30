@@ -1,6 +1,7 @@
 // MT760 profile recovered from A HUB.exe qCompress resource at 0x11349761.
 // Packet encoding traced through RapooDevice.dll VA 0x6feb0e20–0x6feb1e83.
 import { validateReport, addressOf } from './protocol.mjs';
+import { validPolling } from './polling.mjs';
 export const BUTTONS = [
   { id: 0, name: 'Left button', defaultAction: 'left' },
   { id: 1, name: 'Middle / wheel click', defaultAction: 'middle' },
@@ -51,7 +52,8 @@ export function encodeButton(id, actionId, { key = 6, modifiers = 8 } = {}) {
 export function allowedParameterWrite(report) {
   validateReport(report); const address = addressOf(report);
   if (report[2] !== 0xa5) return false;
-  if ([0x638,0x648,0x630].includes(address)) return true;
+  if (address === 0x630) return validPolling(report);
+  if ([0x638,0x648].includes(address)) return true;
   if (address<0x600 || address>0x628 || (address-0x600)%4 || report[3]!==4) return false;
   const id = (address-0x600)/4, body = Array.from(report.slice(8,12));
   if (report.slice(12).some(x=>x!==0)) return false;
