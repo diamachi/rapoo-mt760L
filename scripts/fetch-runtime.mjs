@@ -12,6 +12,6 @@ const data=await get(archive);if(!expected||createHash('sha256').update(data).di
 await mkdir('dist/runtime-download',{recursive:true});await writeFile(`dist/runtime-download/${archive}`,data);
 if(mac)execFileSync('tar',['-xzf',`dist/runtime-download/${archive}`,'-C','dist/runtime-download']);
 else execFileSync('powershell.exe',['-NoProfile','-Command',`Expand-Archive -LiteralPath 'dist/runtime-download/${archive}' -DestinationPath 'dist/runtime-download'`]);
-const source=`dist/runtime-download/${base}`,dest=mac?'_toolchain/portable-node-macos-arm64':'_toolchain/node26';await mkdir(dest,{recursive:true});
+const source=`dist/runtime-download/${base}`,dest=mac?'_toolchain/portable-node-macos-arm64':'_toolchain/portable-node-windows-x64';await mkdir(dest,{recursive:true});
 await cp(`${source}/${mac?'bin/node':'node.exe'}`,`${dest}/${mac?'node':'node.exe'}`);await cp(`${source}/LICENSE`,`${dest}/LICENSE`);
 console.log(`Verified portable Node ${version} copied to ${dest}`);

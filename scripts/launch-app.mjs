@@ -22,7 +22,7 @@ server.once('error', async error => {
   process.exitCode = 1;
 });
 server.listen(port, '127.0.0.1', () => {
-  console.log(`Rapoo Local → ${url}\nKeep this terminal open. Ctrl+C quits the app and its scroll helper.\nWindows device control requires Chrome or Edge.`);
+  console.log(`Rapoo Local → ${url}\nKeep this terminal open. Ctrl+C quits this developer server.\nWindows device control requires Chrome or Edge.`);
   openBrowser();
 });
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => {
