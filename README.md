@@ -1,69 +1,44 @@
-# Rapoo Local — MT760L
+# Rapoo Local
 
-A lightweight, portable mouse manager with a local browser interface. No Electron, npm dependencies, installer, cloud account or background service. This is an unofficial community project, not affiliated with Rapoo.
+A lightweight desktop manager for the Rapoo MT760L and its 2.4 GHz receiver. Version **0.2.0** has its own application window on macOS and Windows. No Terminal, command window or external browser is needed for normal use. Closing the window stops the app's local service.
 
-**Preview release 0.1.0:** DPI writes are confirmed working by the user on an Apple Silicon Mac with the MT760L 2.4 GHz receiver (`24ae:1870`). Button encodings and the fixed-line scroll helper still need physical testing. Windows device control is unverified.
+## Install
 
-## Download and run
+- **Mac Apple Silicon:** open the `.dmg`, drag **Rapoo Local** to **Applications**, then open it. macOS 14+ target. The app bundles its portable runtime and uses the system WebKit view.
+- **Windows x64:** run `Rapoo-Local-0.2.0-windows-x64-setup.exe`, then open **Rapoo Local** from Start. Setup is per-user and includes uninstall support. It adds Microsoft's WebView2 runtime only if missing; that step needs internet. Node and the native HID bridge are bundled.
 
-Extract the entire ZIP first; keep its files together.
+The packages are unsigned previews. macOS Input Monitoring permission may be required for Rapoo Local or its bundled runtime to access the receiver. Follow the displayed access error and restart the app after changing permission yourself. The app does not grant permissions or install a driver automatically.
 
-| Package | Start | Support |
-| --- | --- | --- |
-| macOS Apple Silicon | Double-click **Rapoo Local.app** | Unsigned launcher opens Terminal and your browser. macOS 14+ target; only the development Mac has been tested. |
-| Windows x64 | **Rapoo Local.exe** in GitHub-built packages, or **start-windows.cmd** | Portable browser app; use Chrome or Edge for WebHID. Local Mac-built Windows ZIP contains the `.cmd` launcher, not a compiled `.exe`. Windows hardware support is unverified. |
-| Source | Add a portable Node runtime, then use the platform launcher | Editable source and build scripts; runtime not included. |
+## Mouse settings
 
-Keep the terminal/console open while using the app. **Ctrl+C quits the server and its scroll helper.** Closing the browser alone does not stop the server. The default address is **http://127.0.0.1:8760**. Launching again reopens a running Rapoo Local instance; another program occupying the port produces an error. The UI uses your default browser; Windows users should open the address in Chrome/Edge if another browser is the default.
+- **DPI:** click a stage to apply immediately, or expand Customize stages to edit the six-stage profile.
+- **Buttons:** click one of the 11 controls on the mouse photo, select an action and click Apply action.
+- **Polling rate:** click **125 / 250 / 500 / 1000 Hz** to apply. The mapping comes from the original DLL and capture. The selected rate is not live readback or a measured frequency.
+- **Dark/light mode:** saved locally in the app's webview profile.
+- **Developer mode:** Settings or Cmd/Ctrl+Shift+D reveals packets, command previews and activity logs. Explicit Preview writes only suppresses writes; leaving Developer mode resets it.
 
-These are unsigned preview packages, not notarized/signed installers. Downloaded apps may be blocked by OS trust policies. Signing and notarization are not configured; do not disable system security to run them.
+The previous fixed-line scrolling feature and its native interception helper have been removed. Wheel-button assignments remain available as normal mouse actions. The earlier product photo is restored in the header and button map, with attribution in `app/public/assets/README.md`.
 
-## Features
+The app displays a saved DPI profile and suggested button defaults, not values read from the device. A DPI write sends the complete profile block. Applying after Disconnect reconnects automatically; disconnecting does not enable preview mode.
 
-- Click a DPI preset to apply immediately. **Customize stages** edits six values (50–4000 DPI in steps of 50), enabled stage count and **Apply DPI settings**. Successful writes save the profile in this browser.
-- Click a control on the visual mouse map, select an action, then **Apply action**. There are 11 vendor-profile inputs: left/middle/right, DIY, DPI, side forward/back, thumb wheel left/right and main wheel up/down. Only the selected input is sent. Pending selections survive switching inputs during the session.
-- Actions include clicks, double-click, back/forward, media keys, keyboard shortcuts, DPI cycles/steps and disabling an input. Wheel targets offer compatible actions. Power/pairing controls are not remapped.
-- **Dark mode / Light mode** saves your appearance preference locally.
-- **Settings → Developer mode**, or **Cmd/Ctrl+Shift+D**, reveals command previews, the packet explorer and activity logs. Logs are retained in memory while hidden. **Preview writes only** suppresses device writes; leaving Developer mode resets that option.
+## Compatibility and validation
 
-Displayed values are an app profile and suggested actions, **not settings read back from the mouse**. Transport success does not establish device readback. The app opens the known Mac receiver on startup but sends no setting writes until you apply a change. Use the 2.4 GHz receiver; Bluetooth and cable operation are unverified.
+The user confirmed the earlier Mac and Windows packages work with this receiver (`24ae:1870`). The new desktop release adds native Windows HID access to support the embedded view, and the new polling selector still needs a physical check. Build tests and window smoke tests do not establish every physical action's effect. Bluetooth, other mouse models and Intel Mac are not verified.
 
-## Mac permissions and scrolling
+Mac HID uses portable Node 26.4 FFI with system IOKit/CoreFoundation. Windows desktop HID uses the bundled C# bridge and Windows HID APIs, with descriptor validation for output report BA/31 payload bytes. No scrolling event tap or keyboard input listener is installed.
 
-macOS may require Input Monitoring for Terminal / portable Node to access the receiver. Follow the error shown by the app, then restart the launching process after granting permission yourself. The app never grants permissions automatically or installs a driver.
+## Source and builds
 
-**Fixed-line scrolling** is a separate Mac-only, opt-in helper. Choose 1–100 lines and click **Start fixed-line scrolling**. It multiplies raw vertical HID wheel increments by that logical line count and replaces accelerated discrete vertical scroll events. It applies to all HID mouse wheels while active; trackpad/continuous and horizontal scrolling pass through. Stop it in the UI or quit the server. Accessibility and Input Monitoring permission may be required.
+The editable interface has no npm dependencies or frontend build step. The existing two portable runtimes are under `_toolchain/portable-node-macos-arm64/` and `_toolchain/portable-node-windows-x64/`. Developer browser launchers remain source-only; they are not required by installed apps.
 
-Pixel-based applications can render a different visual distance. High-resolution wheels on other models may produce multiple increments per physical notch. The helper does not change a firmware line-count setting or the macOS scroll preference. Physical behavior still needs testing.
+```sh
+sh test-macos.command
+_toolchain/portable-node-macos-arm64/node scripts/package-release.mjs source
+_toolchain/portable-node-macos-arm64/node scripts/package-release.mjs macos-arm64
+```
 
-## Platform status
+Build the Windows target on Windows or GitHub Actions, where its native window, HID helper and installer are compiled. A Mac build uses an already available Apple compiler and system disk-image utility, without installing tools. GitHub's Windows runner supplies the existing .NET compiler and Inno Setup; WebView2 SDK files are fetched into that builder's toolchain folder, not installed on the Mac.
 
-| Capability | macOS Apple Silicon | Windows x64 |
-| --- | --- | --- |
-| Browser UI / portable runtime | Checked on development Mac | Packaging workflow prepared; not executed here |
-| Receiver transport | Native IOKit/CoreFoundation through Node FFI; detected/opened | Chrome/Edge WebHID; OS/driver access may block it; untested |
-| DPI effects | User confirmed | Untested |
-| Button effects | Encodings tested; physical effects unverified | Untested |
-| Exact logical scroll lines | Opt-in helper; physical behavior unverified | Not implemented |
+Every archive has a SHA-256 sidecar and per-file manifest. The Mac target produces `.app.zip` contents and a drag-install `.dmg`; the Windows target produces a portable desktop ZIP and a setup executable. See [build instructions](docs/PUBLISHING.md), [file guide](docs/FILES.md), [development notes](docs/DEVELOPMENT.md) and [polling evidence](research/POLLING-RATE.md).
 
-No Windows native bridge is included. Windows packaging is not a claim of Windows hardware compatibility. Linux has a source launcher but no bundled runtime or physical testing. Intel Mac builds are not included.
-
-## Work on the source
-
-No package installation or build step is needed for the web UI. Put portable Node **26.4.0** plus its upstream `LICENSE` at:
-
-- Mac arm64: `_toolchain/portable-node-macos-arm64/node`
-- Windows x64: `_toolchain/node26/node.exe`
-
-Run `./start-macos.command` or `start-windows.cmd`. On Mac, `./test-macos.command` runs the tests. With another suitable runtime, run `node --test app/test/*.test.mjs`. The Mac bridge specifically requires Node 26.4's experimental FFI; the launcher and helpers use the bundled runtime, never a PATH fallback. No tests send hardware commands or enable live scroll interception.
-
-`app/data/protocol-fixture.json` contains only frame numbers, transfer/setup fields and protocol bytes from the supplied capture. Host timestamps, IRP addresses, host/device bus identifiers, raw capture and proprietary executables are excluded. This fixture lets the released app and tests run independently of the original research workspace. The mouse drawing is an original SVG schematic, not a manufacturer photo.
-
-## Files, builds and publication
-
-- **[Complete file-by-file guide](docs/FILES.md)** — every source file and its role; generated package layouts and excluded originals.
-- **[Build and GitHub publishing guide](docs/PUBLISHING.md)** — local ZIP creation, private repository setup, GitHub Windows `.exe` build, checksums and later public sharing.
-- **[Development notes](docs/DEVELOPMENT.md)** and **[protocol notes](research/PROTOCOL.md)** — implementation details and evidence limits.
-- **[Button/scroll research](research/BUTTONS-AND-SCROLL.md)** — IDs, encodings and remaining uncertainties.
-
-The GitHub workflow builds artifacts on manual runs or version tags. It does **not** publish a release or change repository visibility automatically. Source is MIT licensed; bundled Node retains its upstream licenses. See [third-party notices](THIRD_PARTY_NOTICES.md).
+Original vendor executables/capture, generated research, personal notes and unused analysis tools are not app dependencies. Personal notes remain outside the packager's selected folders. This is an unofficial project; source is MIT licensed with separate Node/WebView2 licensing and product-photo attribution in [third-party notices](THIRD_PARTY_NOTICES.md).

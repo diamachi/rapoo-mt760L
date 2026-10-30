@@ -1,4 +1,4 @@
 @echo off
 cd /d "%~dp0"
-"_toolchain\node26\node.exe" scripts\launch-app.mjs
+"_toolchain\portable-node-windows-x64\node.exe" scripts\launch-app.mjs
 pause

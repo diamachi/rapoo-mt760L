@@ -21,5 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 Bundled Node.js runtimes retain their separate upstream licenses. Rapoo names
-and trademarks belong to their respective owners. Original vendor software,
-captures and the cached vendor photo are excluded from release packages.
+and trademarks belong to their respective owners. Original vendor software and
+captures are excluded from release packages. The restored product photo remains
+copyright its original owner and is not covered by this MIT license.
