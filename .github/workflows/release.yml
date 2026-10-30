@@ -1,0 +1,39 @@
+name: Build portable apps
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            target: macos-arm64
+          - os: windows-2025
+            target: windows-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.4.0'
+      - name: Fetch and verify portable runtime
+        run: node scripts/fetch-runtime.mjs ${{ matrix.target }}
+      - name: Test source (no physical device required)
+        run: node --test app/test/*.test.mjs
+      - name: Package app
+        run: node scripts/package-release.mjs ${{ matrix.target }}
+      - name: Package source
+        if: matrix.target == 'macos-arm64'
+        run: node scripts/package-release.mjs source
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Rapoo-Local-${{ matrix.target }}
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
