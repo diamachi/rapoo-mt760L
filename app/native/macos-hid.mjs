@@ -1,5 +1,6 @@
 // Run only with the project Node: node --experimental-ffi app/native/macos-hid.mjs list|probe|send [registry-id] [hex]
 // No package, compiler, driver, installation, event tap, input callback, or exclusive device access.
+// battery sends only the fixed getElectricity query and reads vendor input report BA.
 import { DynamicLibrary, toBuffer } from 'node:ffi';
 import { parseHidDescriptor, hasConfigurationReport } from '../src/hid-descriptor.mjs';
 import { fromHex, validateReport } from '../src/protocol.mjs';
@@ -27,6 +28,7 @@ const f = {
   open: bind(io, 'IOHIDDeviceOpen', 'i32', ['pointer', 'u32']),
   close: bind(io, 'IOHIDDeviceClose', 'i32', ['pointer', 'u32']),
   send: bind(io, 'IOHIDDeviceSetReport', 'i32', ['pointer', 'i32', 'i64', 'pointer', 'i64']),
+  get: bind(io, 'IOHIDDeviceGetReport', 'i32', ['pointer', 'i32', 'i64', 'pointer', 'pointer']),
 };
 const keys = new Map();
 function key(name) { if (!keys.has(name)) keys.set(name, f.string(null, name, 0x08000100)); return keys.get(name); }
@@ -47,7 +49,7 @@ function check(code, operation) {
 let manager = 0n, dictionary = 0n, set = 0n;
 try {
   const command = process.argv[2] || 'list';
-  if (!['list', 'probe', 'send'].includes(command)) throw Error('Unsupported native operation');
+  if (!['list', 'probe', 'send', 'battery'].includes(command)) throw Error('Unsupported native operation');
   manager = f.manager(null, 0); if (!manager) throw Error('Unable to create HID manager');
   dictionary = f.dict(null, 0n, cf.getSymbol('kCFTypeDictionaryKeyCallBacks'), cf.getSymbol('kCFTypeDictionaryValueCallBacks'));
   for (const [name, value] of [['VendorID', 0x24ae], ['ProductID', 0x1870]]) {
@@ -79,7 +81,30 @@ try {
         // IOHID expects the FULL report, including ID, unlike WebHID.
         check(f.send(target.pointer, 1, 0xban, bytes, 32n), 'Send output report BA');
       }
+      if (command === 'battery') {
+        // DLL command-map 0x7da -> BA A5 AA: getElectricity, not a parameter write.
+        const request = Buffer.alloc(32); request.set([0xba,0xa5,0xaa]);
+        let reply;
+        for(let attempt=0;attempt<3;attempt++) {
+          check(f.send(target.pointer, 1, 0xban, request, 32n), 'Request battery status');
+          await new Promise(resolve=>setTimeout(resolve,50));
+          const report=Buffer.alloc(32);report[0]=0xba;
+          const length=Buffer.alloc(8);length.writeBigInt64LE(32n);
+          const result=f.get(target.pointer,0,0xban,report,length);
+          // A sleeping mouse can return a pending byte or stall this control read.
+          // Retry the complete status transaction, never an unbounded GET loop.
+          if((result>>>0)===0xe0005000)continue;
+          check(result,'Read battery status');
+          const size=Number(length.readBigInt64LE());
+          if(size<0||size>32)throw Error('Invalid battery reply length');
+          reply=report.subarray(0,size);
+          if(size>=3 && report[0]===1)break;
+        }
+        if(!reply||reply.length<3||reply[0]!==1)throw Error('Mouse battery response timed out. Wake the mouse and refresh.');
+        console.log(JSON.stringify({batteryReport:reply.toString('hex')}));
+      } else {
       console.log(JSON.stringify({ device: publicInfo(target), status: command === 'send' ? 'sent-unverified' : 'opened', reportsSent: command === 'send' ? 1 : 0 }));
+      }
     } finally { f.close(target.pointer, 0); }
   }
 } catch (error) { console.log(JSON.stringify({ error: error.message })); process.exitCode = 1; }
