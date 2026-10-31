@@ -1,11 +1,13 @@
 import { fromHex, toHex, decodeDpi, encodeDpi, capturedWrite, addressOf } from '/src/protocol.mjs';
 import { WebHidTransport } from '/src/transport.mjs';
 import { NativeTransport } from '/src/native-client.mjs';
-import { BUTTONS, KEYS, actionsForButton, encodeButton } from '/src/buttons.mjs';
+import { BUTTONS, KEYS, actionsForButton, encodeButton, requiresPrimaryClickConsent } from '/src/buttons.mjs';
 import { POLLING_RATES, encodePolling } from '/src/polling.mjs';
 import { buildMouseMap } from '/mouse-map.mjs';
+import { createActionPicker } from '/action-picker.mjs';
 const $ = id => document.getElementById(id);
 const logs = []; let packets = [], template, selected, busy = false;
+let packetsRendered=false;
 let noticeTimer, developerMode=false, previewOnly=false, measurementAvailable=false, batteryBusy=false;
 function notice(message, error = false) {
   clearTimeout(noticeTimer);$('notice').hidden=false;$('notice').textContent=message;$('notice').classList.toggle('error',error);
@@ -14,7 +16,7 @@ function notice(message, error = false) {
 function updateThemeLabel(){const dark=document.documentElement.dataset.theme==='dark';$('theme-toggle').textContent=dark?'Light mode':'Dark mode';$('theme-toggle').setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');}
 $('theme-toggle').addEventListener('click',()=>{const theme=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=theme;try{localStorage.setItem('rapoo-theme',theme);}catch{}updateThemeLabel();});
 updateThemeLabel();
-function setDeveloper(enabled){developerMode=enabled;document.documentElement.dataset.developer=String(enabled);$('developer-mode').checked=enabled;if(!enabled){previewOnly=false;$('preview-only').checked=false;}document.documentElement.dataset.preview=String(previewOnly);updateMode();}
+function setDeveloper(enabled){if(enabled&&!packetsRendered&&packets.length)renderPackets();developerMode=enabled;document.documentElement.dataset.developer=String(enabled);$('developer-mode').checked=enabled;if(!enabled){previewOnly=false;$('preview-only').checked=false;}document.documentElement.dataset.preview=String(previewOnly);updateMode();}
 $('developer-mode').addEventListener('change',()=>setDeveloper($('developer-mode').checked));
 $('preview-only').addEventListener('change',()=>{previewOnly=$('preview-only').checked;document.documentElement.dataset.preview=String(previewOnly);updateMode();});
 document.addEventListener('keydown',event=>{if((event.metaKey||event.ctrlKey)&&event.shiftKey&&event.key.toLowerCase()==='d'){event.preventDefault();setDeveloper(!developerMode);}});
@@ -46,7 +48,7 @@ async function run(action) {
   if (busy) return; busy = true;
   document.querySelectorAll('button').forEach(b => b.disabled = true);
   try { await action(); } catch (e) { const permission=connectionError(e); notice(permission?'Receiver access needs Input Monitoring permission. Follow the instructions below, then quit and reopen the preview or app.':e.message, true); log('ERROR', e.message); }
-  finally { busy = false; document.querySelectorAll('button').forEach(b => b.disabled = false); $('measure-rate').disabled=!measurementAvailable;$('battery-refresh').disabled=!nativeMode||!transport.device||batteryBusy; }
+  finally { busy = false; document.querySelectorAll('button').forEach(b => b.disabled = false); $('measure-rate').disabled=!measurementAvailable;syncPrimaryEditors();$('battery-refresh').disabled=!nativeMode||!transport.device||batteryBusy; }
 }
 async function refreshBattery() {
   if(batteryBusy || !nativeMode || !transport.device)return;
@@ -94,8 +96,12 @@ function updateMode() {
   $('replay').textContent=previewOnly?'Preview captured write':'Replay captured write';
   document.querySelectorAll('.button-apply').forEach(b=>b.textContent=previewOnly?'Preview action':'Apply action');
 }
+const primaryEditors=[];
+function syncPrimaryEditors(){primaryEditors.forEach(editor=>editor.sync());}
 function renderButtons() {
   const selectButton=id=>{
+    document.querySelectorAll('.action-picker-popup').forEach(popup=>{if(!popup.hidden)popup.previousElementSibling?.click();});
+    primaryEditors.forEach(editor=>{editor.unlock.checked=false;editor.sync();});
     $('button-target').value=String(id);
     document.querySelectorAll('.button-row').forEach(row=>row.hidden=Number(row.dataset.inputId)!==id);
     document.querySelectorAll('.mouse-pin').forEach(pin=>pin.setAttribute('aria-pressed',String(Number(pin.dataset.inputId)===id)));
@@ -110,7 +116,18 @@ function renderButtons() {
     const heading=document.createElement('div'),name=document.createElement('h3'),info=document.createElement('small');
     name.textContent=button.name;info.textContent='Suggested starting action';heading.append(name,info);
     const action=document.createElement('select');action.id=`button-action-${button.id}`;action.setAttribute('aria-label',`${button.name} action`);
-    for(const item of actionsForButton(button.id)) {const option=document.createElement('option');option.value=item.id;option.textContent=item.name;action.append(option);} action.value=button.defaultAction;
+    const groups=new Map();
+    for(const item of actionsForButton(button.id)) {
+      if(!groups.has(item.group)){const group=document.createElement('optgroup');group.label=item.group;groups.set(item.group,group);action.append(group);}
+      const option=document.createElement('option');option.value=item.id;option.textContent=item.name;groups.get(item.group).append(option);
+    }
+    action.value=button.defaultAction;
+    const picker=createActionPicker(action,button.name);
+    const protectedClick=button.id===0||button.id===2;
+    const unlock=document.createElement('input');unlock.type='checkbox';unlock.className='primary-click-unlock';unlock.id=`unlock-click-${button.id}`;
+    const protection=document.createElement('div');protection.className='primary-protection';protection.hidden=!protectedClick;
+    const unlockLabel=document.createElement('label');unlockLabel.htmlFor=unlock.id;unlockLabel.append(unlock,document.createTextNode(`Unlock ${button.name.toLowerCase()} assignment`));
+    const warning=document.createElement('p');warning.textContent='Changing this can remove a normal click. Keep another way to control the mouse available.';protection.append(unlockLabel,warning);
     const shortcut=document.createElement('div');shortcut.className='shortcut';shortcut.hidden=true;
     const modifiers=[];
     for(const [label,bit] of [['Control',1],['Shift',2],['Alt / Option',4],['Win / Command',8]]) {
@@ -120,14 +137,20 @@ function renderButtons() {
     for(const item of KEYS){const option=document.createElement('option');option.value=item.code;option.textContent=item.name;key.append(option);}key.value=6;shortcut.append(key);
     const code=document.createElement('code');code.className='button-bytes';
     const state=()=>({key:Number(key.value),modifiers:modifiers.reduce((n,x)=>n+(x.checked?Number(x.dataset.bit):0),0)});
-    const refresh=()=>{shortcut.hidden=action.value!=='shortcut';code.textContent=toHex(encodeButton(button.id,action.value,state()));};
+    const refresh=()=>{picker.sync();shortcut.hidden=action.value!=='shortcut';code.textContent=toHex(encodeButton(button.id,action.value,state()));};
     action.addEventListener('change',refresh);key.addEventListener('change',refresh);modifiers.forEach(x=>x.addEventListener('change',refresh));
     const apply=document.createElement('button');apply.className='button-apply';apply.textContent='Apply action';
-    apply.addEventListener('click',()=>run(async()=>{await sendOrPreview(encodeButton(button.id,action.value,state()),`${button.name} → ${action.selectedOptions[0].textContent}`);info.textContent=previewOnly?'Previewed · no write':'Action sent to mouse';}));
-    const reset=document.createElement('button');reset.textContent='Reset selection';reset.addEventListener('click',()=>{action.value=button.defaultAction;refresh();info.textContent='Starting action selected · click Apply action to send';});
-    const controls=document.createElement('div');controls.className='button-controls';controls.append(action);const applyRow=document.createElement('div');applyRow.className='button-apply-row';applyRow.append(apply,reset);
+    const syncProtection=()=>{if(!protectedClick)return;action.disabled=!unlock.checked;picker.sync();shortcut.querySelectorAll('input,select').forEach(field=>field.disabled=!unlock.checked);apply.disabled=busy||(requiresPrimaryClickConsent(encodeButton(button.id,action.value,state()))&&!unlock.checked);};
+    if(protectedClick)primaryEditors.push({unlock,sync:syncProtection});
+    unlock.addEventListener('change',syncProtection);action.addEventListener('change',syncProtection);
+    apply.addEventListener('click',()=>run(async()=>{
+      await sendOrPreview(encodeButton(button.id,action.value,state()),`${button.name} → ${action.selectedOptions[0].textContent}`,{confirmPrimaryClick:protectedClick&&unlock.checked});
+      info.textContent=previewOnly?'Previewed · no write':'Action sent to mouse';unlock.checked=false;syncProtection();
+    }));
+    const reset=document.createElement('button');reset.textContent='Reset selection';reset.addEventListener('click',()=>{action.value=button.defaultAction;unlock.checked=false;refresh();syncProtection();info.textContent='Starting action selected · click Apply action to send';});
+    const controls=document.createElement('div');controls.className='button-controls';const actionLabel=document.createElement('label');actionLabel.className='action-field';actionLabel.htmlFor=picker.trigger.id;const actionTitle=document.createElement('span');actionTitle.textContent='Assign an action';actionLabel.append(actionTitle,action,picker.element);controls.append(actionLabel);const applyRow=document.createElement('div');applyRow.className='button-apply-row';applyRow.append(apply,reset);
     const details=document.createElement('details');details.className='button-command developer-only';const summary=document.createElement('summary');summary.textContent='Command preview';details.append(summary,code);
-    row.append(heading,controls,shortcut,applyRow,details);$('button-editor').append(row);refresh();
+    row.append(heading,protection,controls,shortcut,applyRow,details);$('button-editor').append(row);refresh();
   }
   selectButton(0);
 }
@@ -153,10 +176,11 @@ $('measure-rate').addEventListener('click',()=>run(async()=>{
   } catch(error) { $('rate-test-result').textContent=error.message;if(nativePlatform==='darwin' && /denied|Input Monitoring/i.test(error.message))$('permission-help').hidden=false; throw error; }
   finally { $('measure-rate').textContent='Measure actual reports · 6 seconds'; }
 }));
-async function sendOrPreview(bytes, label) {
+async function sendOrPreview(bytes, label, {confirmPrimaryClick=false}={}) {
+  if(requiresPrimaryClickConsent(bytes)&&!confirmPrimaryClick)throw Error('Unlock the Left or Right button assignment in the button editor before changing its normal click.');
   if (previewOnly) { log('PREVIEW · NO DEVICE WRITE', `${label} · ${toHex(bytes)}`); notice('Preview recorded in Developer tools. Nothing sent.'); return; }
   if(!transport.device)await connectMouse();
-  await transport.send(bytes);
+  await transport.send(bytes,{confirmPrimaryClick});
   if(addressOf(bytes)===0x638){try{localStorage.setItem('rapoo-dpi-profile',JSON.stringify(decodeDpi(bytes)));}catch{}}
   notice(`${label} sent to mouse.`);
 }
@@ -168,6 +192,7 @@ function inspect(p) {
   $('replay').hidden = !capturedWrite(p);
 }
 function renderPackets() {
+  packetsRendered=true;
   $('packets').replaceChildren();
   for (const p of packets.filter(p => $('filter').value === 'all' || ($('filter').value === 'writes' ? capturedWrite(p) : p.setup?.requestType === 0xa1))) {
     const tr = document.createElement('tr'); let address = '—', op = 'USB setup';
@@ -210,7 +235,7 @@ $('support').textContent = navigator.hid ? 'WebHID available · select the USB r
 await run(async () => {
   const info=await(await fetch('/api/info')).json();$('local-preview').hidden=!info.development;
   const response = await fetch('/api/capture'); if (!response.ok) throw Error('Could not load the supplied capture');
-  packets = await response.json(); loadDpi(packets.find(p => p.frame === 12),true); renderPackets();
+  packets = await response.json(); loadDpi(packets.find(p => p.frame === 12),true);
   renderButtons(); renderPolling();
   const native = new NativeTransport(localRequest, log);
   const status = await native.status();
