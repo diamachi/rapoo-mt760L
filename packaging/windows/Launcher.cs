@@ -71,9 +71,11 @@ class DesktopWindow : Form {
     void StopServer() {if(closing)return;closing=true;try{if(server!=null && !server.HasExited){server.Kill();server.WaitForExit(3000);}}catch{}if(server!=null)server.Dispose();}
 }
 class Launcher {
+    [DllImport("shell32.dll",CharSet=CharSet.Unicode)] static extern int SetCurrentProcessExplicitAppUserModelID(string appID);
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string name);
     [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr handle);
     [STAThread] static int Main(string[] args) {
+        SetCurrentProcessExplicitAppUserModelID("RapooLocal.Desktop");
         if(args.Length==1 && args[0]=="--self-test")return File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"app","native","windows-hid.exe"))?0:1;
         bool first;using(var mutex=new Mutex(true,"Local\\RapooLocalDesktop",out first)) {
             if(!first){SetForegroundWindow(FindWindow(null,"Rapoo Local"));return 0;}

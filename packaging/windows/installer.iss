@@ -23,8 +23,8 @@ CloseApplications=yes
 Source: "{#AppDirectory}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Bootstrapper}"; Flags: dontcopy
 [Icons]
-Name: "{group}\Rapoo Local"; Filename: "{app}\Rapoo Local.exe"
-Name: "{autodesktop}\Rapoo Local"; Filename: "{app}\Rapoo Local.exe"; Tasks: desktopicon
+Name: "{group}\Rapoo Local"; Filename: "{app}\Rapoo Local.exe"; AppUserModelID: "RapooLocal.Desktop"; IconFilename: "{app}\Rapoo Local.exe"
+Name: "{autodesktop}\Rapoo Local"; Filename: "{app}\Rapoo Local.exe"; Tasks: desktopicon; AppUserModelID: "RapooLocal.Desktop"; IconFilename: "{app}\Rapoo Local.exe"
 [Tasks]
 Name: desktopicon; Description: "Create a desktop shortcut"; Flags: unchecked
 [Run]
