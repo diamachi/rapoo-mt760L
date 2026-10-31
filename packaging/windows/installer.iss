@@ -1,34 +1,34 @@
 #ifndef AppVersion
-#define AppVersion "0.2.0"
+#define AppVersion "0.4.0"
 #endif
 [Setup]
 AppId={{7055C9A1-591C-4AF2-9B3B-44A0BEF23C72}
-AppName=Rapoo Local
+AppName=OpenRapoo
 AppVersion={#AppVersion}
-AppPublisher=Rapoo Local contributors
+AppPublisher=OpenRapoo contributors
 SetupIconFile=..\assets\app-icon.ico
-DefaultDirName={localappdata}\Programs\Rapoo Local
-DefaultGroupName=Rapoo Local
+DefaultDirName={localappdata}\Programs\OpenRapoo
+DefaultGroupName=OpenRapoo
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir={#OutputDirectory}
-OutputBaseFilename=Rapoo-Local-{#AppVersion}-windows-x64-setup
+OutputBaseFilename=OpenRapoo-{#AppVersion}-windows-x64-setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-UninstallDisplayIcon={app}\Rapoo Local.exe
+UninstallDisplayIcon={app}\OpenRapoo.exe
 CloseApplications=yes
 [Files]
 Source: "{#AppDirectory}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Bootstrapper}"; Flags: dontcopy
 [Icons]
-Name: "{group}\Rapoo Local"; Filename: "{app}\Rapoo Local.exe"; AppUserModelID: "RapooLocal.Desktop"; IconFilename: "{app}\Rapoo Local.exe"
-Name: "{autodesktop}\Rapoo Local"; Filename: "{app}\Rapoo Local.exe"; Tasks: desktopicon; AppUserModelID: "RapooLocal.Desktop"; IconFilename: "{app}\Rapoo Local.exe"
+Name: "{group}\OpenRapoo"; Filename: "{app}\OpenRapoo.exe"; AppUserModelID: "OpenRapoo.Desktop"; IconFilename: "{app}\OpenRapoo.exe"
+Name: "{autodesktop}\OpenRapoo"; Filename: "{app}\OpenRapoo.exe"; Tasks: desktopicon; AppUserModelID: "OpenRapoo.Desktop"; IconFilename: "{app}\OpenRapoo.exe"
 [Tasks]
 Name: desktopicon; Description: "Create a desktop shortcut"; Flags: unchecked
 [Run]
-Filename: "{app}\Rapoo Local.exe"; Description: "Open Rapoo Local"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\OpenRapoo.exe"; Description: "Open OpenRapoo"; Flags: nowait postinstall skipifsilent
 [Code]
 function HasWebView2: Boolean;
 var Version: String;

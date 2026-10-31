@@ -18,7 +18,7 @@ class DesktopWindow : Form {
     const string Home="http://127.0.0.1:8765/";
     readonly string root=AppDomain.CurrentDomain.BaseDirectory;
     public DesktopWindow(bool smokeTest) {
-        smoke=smokeTest;Text="Rapoo Local";Width=1200;Height=820;MinimumSize=new Size(760,600);StartPosition=FormStartPosition.CenterScreen;
+        smoke=smokeTest;Text="OpenRapoo";Width=1200;Height=820;MinimumSize=new Size(760,600);StartPosition=FormStartPosition.CenterScreen;
         BackColor=Color.FromArgb(46,52,64);
         Icon=System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         Shown+=async (s,e)=>await StartApp();
@@ -26,7 +26,7 @@ class DesktopWindow : Form {
     }
     async Task StartApp() {
         try {
-            string profile=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Rapoo Local","WebView2");
+            string profile=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"OpenRapoo","WebView2");
             var env=await CoreWebView2Environment.CreateAsync(null,profile);
             web=new WebView2 {Dock=DockStyle.Fill,DefaultBackgroundColor=BackColor};Controls.Add(web);
             await web.EnsureCoreWebView2Async(env);
@@ -53,10 +53,10 @@ class DesktopWindow : Form {
             using(var client=new HttpClient()) {
                 client.Timeout=TimeSpan.FromSeconds(1);
                 for(int i=0;i<75;i++) {
-                    if(server.HasExited)throw new Exception("App service stopped. Close other Rapoo Local instances and try again.");
+                    if(server.HasExited)throw new Exception("App service stopped. Close other OpenRapoo instances and try again.");
                     try {
                         var info=new JavaScriptSerializer().DeserializeObject(await client.GetStringAsync(Home+"api/info")) as System.Collections.Generic.Dictionary<string,object>;
-                        if(info!=null && (string)info["app"]=="rapoo-local" && (string)info["version"]==(string)metadata["version"]){web.CoreWebView2.Navigate(Home);return;}
+                        if(info!=null && (string)info["app"]=="openrapoo" && (string)info["version"]==(string)metadata["version"]){web.CoreWebView2.Navigate(Home);return;}
                     } catch(HttpRequestException) {} catch(TaskCanceledException) {}
                     await Task.Delay(200);
                 }
@@ -64,7 +64,7 @@ class DesktopWindow : Form {
             throw new Exception("The local app service did not become ready.");
         } catch(Exception error) {
             Environment.ExitCode=1;
-            if(!smoke)MessageBox.Show(this,error.Message+"\n\nReinstall using the Rapoo Local setup package if the WebView2 runtime is missing.","Rapoo Local",MessageBoxButtons.OK,MessageBoxIcon.Error);
+            if(!smoke)MessageBox.Show(this,error.Message+"\n\nReinstall using the OpenRapoo setup package if the WebView2 runtime is missing.","OpenRapoo",MessageBoxButtons.OK,MessageBoxIcon.Error);
             Close();
         }
     }
@@ -75,10 +75,10 @@ class Launcher {
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string name);
     [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr handle);
     [STAThread] static int Main(string[] args) {
-        SetCurrentProcessExplicitAppUserModelID("RapooLocal.Desktop");
+        SetCurrentProcessExplicitAppUserModelID("OpenRapoo.Desktop");
         if(args.Length==1 && args[0]=="--self-test")return File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"app","native","windows-hid.exe"))?0:1;
-        bool first;using(var mutex=new Mutex(true,"Local\\RapooLocalDesktop",out first)) {
-            if(!first){SetForegroundWindow(FindWindow(null,"Rapoo Local"));return 0;}
+        bool first;using(var mutex=new Mutex(true,"Local\\OpenRapooDesktop",out first)) {
+            if(!first){SetForegroundWindow(FindWindow(null,"OpenRapoo"));return 0;}
             Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
             Application.ThreadException+=(s,e)=>{Environment.ExitCode=1;Application.Exit();};
             Application.Run(new DesktopWindow(args.Length==1 && args[0]=="--smoke-test"));
