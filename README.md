@@ -4,9 +4,9 @@ A small desktop app for the **Rapoo MT760L**, connected through its **2.4 GHz US
 
 The app uses a native window on macOS and Windows. Normal use needs no terminal, external browser, npm installation or separately installed Node runtime.
 
-[Download the latest preview](https://github.com/diamachi/rapoo-mt760L/releases) · [Build and release guide](docs/PUBLISHING.md) · [Development guide](docs/DEVELOPMENT.md)
+[Download the latest release](https://github.com/diamachi/rapoo-mt760L/releases) · [Build and release guide](docs/PUBLISHING.md) · [Development guide](docs/DEVELOPMENT.md)
 
-> Unofficial project, not affiliated with Rapoo. Releases are currently unsigned previews. OpenRapoo runs locally; no cloud account is needed.
+> Unofficial project, not affiliated with Rapoo. Desktop packages are currently unsigned. OpenRapoo runs locally; no cloud account is needed.
 
 ## A look at the app
 
@@ -14,7 +14,7 @@ The app uses a native window on macOS and Windows. Normal use needs no terminal,
 
 The device card shows connection status and the mouse-reported battery percentage. Click a DPI stage to apply it, or expand **Customize stages** to edit the profile.
 
-![Dark interface showing the connected MT760L, reported battery and DPI stages](docs/screenshots/overview.png)
+![OpenRapoo dark interface with mouse status and six DPI stages](docs/screenshots/overview.png)
 
 ### Visual button assignments
 
@@ -121,7 +121,7 @@ The builder refuses an existing staging directory. For a new release, update `ap
 
 ### GitHub Actions
 
-**Actions → Build desktop apps → Run workflow** builds on Mac and Windows. Leave `release_tag` empty for artifacts only. After testing and approving a release, supply a matching tag such as `v0.4.0-preview.1`, or deliberately push a matching `v*` tag. Publishing waits for both platform checks and checksum verification. Ordinary pushes to `main` do not publish or trigger this workflow. Existing releases are not overwritten.
+**Actions → Build desktop apps → Run workflow** builds on Mac and Windows. Leave `release_tag` empty for artifacts only. After testing and approving a release, supply a matching tag such as `v1.0.0`, or deliberately push a matching `v*` tag. Publishing waits for both platform checks and checksum verification. Ordinary pushes to `main` do not publish or trigger this workflow. Existing releases are not overwritten.
 
 ## Project layout
 

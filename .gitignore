@@ -10,3 +10,8 @@ dist/
 /preview/
 
 /docs/archive/
+
+# Native Mac source only; launchers are generated under preview/ or dist/.
+/packaging/macos/*
+!/packaging/macos/*.swift
+!/packaging/macos/*.plist
