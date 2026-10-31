@@ -16,6 +16,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var home: URL { URL(string: "http://127.0.0.1:\(port)/")! }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if let iconURL = Bundle.main.resourceURL?.appendingPathComponent("AppIcon.icns"),
+           let icon = NSImage(contentsOf: iconURL) {
+            NSApp.applicationIconImage = icon
+        }
         let menu = NSMenu()
         let item = NSMenuItem()
         menu.addItem(item)
