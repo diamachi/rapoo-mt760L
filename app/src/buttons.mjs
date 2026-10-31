@@ -64,3 +64,10 @@ export function allowedParameterWrite(report) {
   // Preserve replay of frame 104 (sniper) without exposing an unconfigured sniper editor.
   return address===0x610 && body.join(',')==='9,0,1,0';
 }
+export function requiresPrimaryClickConsent(report) {
+  validateReport(report);
+  const address=addressOf(report);
+  if(address!==0x600 && address!==0x608)return false;
+  const normal=address===0x600?[3,0,1,0]:[3,0,2,0];
+  return !normal.every((byte,index)=>report[8+index]===byte);
+}

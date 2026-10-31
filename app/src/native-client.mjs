@@ -10,9 +10,9 @@ export class NativeTransport {
     const result = await this.request('/api/native/connect', { token: this.token, body: { id: device.id } });
     this.device = result.device; return this.device;
   }
-  async send(bytes) {
+  async send(bytes, {confirmPrimaryClick=false}={}) {
     validateReport(bytes); if (!this.device) throw Error('Connect the receiver first');
-    await this.request('/api/native/send', { token: this.token, body: { id: this.device.id, hex: toHex(bytes) } });
+    await this.request('/api/native/send', { token: this.token, body: { id: this.device.id, hex: toHex(bytes),confirmPrimaryClick } });
     this.log('SENT · UNVERIFIED', toHex(bytes));
   }
   async battery() {
