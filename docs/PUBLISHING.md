@@ -32,7 +32,7 @@ The setup bundle includes Microsoft's signed WebView2 bootstrapper; installation
 
 The workflow builds on macos-15 arm64 and windows-2025 x64 when manually dispatched or when a v-prefixed tag is pushed. It tests source, packages each desktop app, runs window smoke tests and publishes build artifacts. The Mac artifact includes source ZIP, app ZIP, DMG and checksums. The Windows artifact includes desktop ZIP, setup EXE and checksums. Artifacts wrap the inner release files, so extract the artifact ZIP before attaching downloads to a release.
 
-The workflow publishes after both platform builds and desktop/install checks pass. Deliberately push a matching v-prefixed version tag, or run the workflow manually with `release_tag` (for example `v0.4.0-preview.1`). Leave that input empty for build artifacts only. Ordinary main pushes do not publish. A hyphenated tag produces a prerelease. Existing releases are not overwritten. The publishing job alone has contents write permission; checksums and required installers are verified before publication. The owner must approve publication first. Repository visibility is never changed, and personal documentation is excluded.
+The workflow publishes after both platform builds and desktop/install checks pass. Deliberately push a matching v-prefixed version tag, or run the workflow manually with `release_tag` (for example `v1.0.0`). Leave that input empty for build artifacts only. Ordinary main pushes do not publish. A hyphenated tag produces a prerelease. Existing releases are not overwritten. The publishing job alone has contents write permission; checksums and required installers are verified before publication. The owner must approve publication first. Repository visibility is never changed, and personal documentation is excluded.
 
 
 ## Validation before release
@@ -41,6 +41,6 @@ The workflow publishes after both platform builds and desktop/install checks pas
 2. Compare every distributed file with its .sha256 sidecar; verify internal MANIFEST.json hashes.
 3. Physically test polling/DPI/button effects with the receiver on each OS. Native Windows behavior is new in 0.2.0 even though the earlier WebHID package worked.
 4. Verify Windows setup, Start-menu launch and uninstall. Verify Mac drag-install and OS HID permission prompts.
-5. Publish tested outputs only after explicit approval. These previews remain unsigned; Signing/notarization requires a separate setup.
+5. Publish tested outputs only after explicit approval. These packages remain unsigned; Signing/notarization requires a separate setup.
 
 Official API references: Microsoft WebView2 distribution https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution and HID output reports https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/hidsdi/nf-hidsdi-hidd_setoutputreport .
