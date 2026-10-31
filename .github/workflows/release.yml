@@ -51,14 +51,14 @@ jobs:
         shell: bash
         run: |
           version=$(node -p 'JSON.parse(require("fs").readFileSync("app/package.json")).version')
-          "dist/Rapoo-Local-$version-macos-arm64/Rapoo Local.app/Contents/MacOS/RapooLocal" --smoke-test
+          "dist/OpenRapoo-$version-macos-arm64/OpenRapoo.app/Contents/MacOS/OpenRapoo" --smoke-test
           node --input-type=module -e 'try { await fetch("http://127.0.0.1:8765/api/info"); process.exit(1); } catch {}'
       - name: Windows window and service lifecycle smoke test
         if: matrix.target == 'windows-x64'
         shell: pwsh
         run: |
           $version = (Get-Content app/package.json | ConvertFrom-Json).version
-          $app = Resolve-Path "dist/Rapoo-Local-$version-windows-x64/Rapoo Local.exe"
+          $app = Resolve-Path "dist/OpenRapoo-$version-windows-x64/OpenRapoo.exe"
           $process = Start-Process -FilePath $app -ArgumentList '--smoke-test' -PassThru
           if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Desktop smoke test timed out' }
           if ($process.ExitCode -ne 0) { throw 'Desktop smoke test failed' }
@@ -68,23 +68,23 @@ jobs:
         shell: pwsh
         run: |
           $version = (Get-Content app/package.json | ConvertFrom-Json).version
-          $install = Join-Path $env:RUNNER_TEMP 'Rapoo Local Installed'
-          $setup = Resolve-Path "dist/Rapoo-Local-$version-windows-x64-setup.exe"
+          $install = Join-Path $env:RUNNER_TEMP 'OpenRapoo Installed'
+          $setup = Resolve-Path "dist/OpenRapoo-$version-windows-x64-setup.exe"
           $process = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=`"$install`"") -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw 'Installation failed' }
-          $process = Start-Process -FilePath (Join-Path $install 'Rapoo Local.exe') -ArgumentList '--smoke-test' -PassThru
+          $process = Start-Process -FilePath (Join-Path $install 'OpenRapoo.exe') -ArgumentList '--smoke-test' -PassThru
           if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Installed app timed out' }
           if ($process.ExitCode -ne 0) { throw 'Installed app smoke test failed' }
           if (Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue) { throw 'Installed app left its service running' }
           $process = Start-Process -FilePath (Join-Path $install 'unins000.exe') -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw 'Uninstall failed' }
-          if (Test-Path (Join-Path $install 'Rapoo Local.exe')) { throw 'Uninstall left the launcher behind' }
+          if (Test-Path (Join-Path $install 'OpenRapoo.exe')) { throw 'Uninstall left the launcher behind' }
       - name: Package source
         if: matrix.target == 'macos-arm64'
         run: node scripts/package-release.mjs source
       - uses: actions/upload-artifact@v4
         with:
-          name: Rapoo-Local-${{ matrix.target }}
+          name: OpenRapoo-${{ matrix.target }}
           path: |
             dist/*.zip
             dist/*.dmg
@@ -101,7 +101,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          pattern: Rapoo-Local-*
+          pattern: OpenRapoo-*
           merge-multiple: true
           path: release-files
       - name: Verify checksums and publish release
@@ -118,8 +118,8 @@ jobs:
           version=$(node -p 'JSON.parse(require("fs").readFileSync("app/package.json")).version')
           [[ "$tag" = "v$version" || "$tag" = "v$version-"* ]] || { echo 'Tag must match app version'; exit 1; }
           (cd release-files && sha256sum -c ./*.sha256)
-          test -f "release-files/Rapoo-Local-$version-macos-arm64.dmg"
-          test -f "release-files/Rapoo-Local-$version-windows-x64-setup.exe"
+          test -f "release-files/OpenRapoo-$version-macos-arm64.dmg"
+          test -f "release-files/OpenRapoo-$version-windows-x64-setup.exe"
           flags=()
           if [[ "$tag" = *-* ]]; then flags+=(--prerelease); fi
-          gh release create "$tag" release-files/* --target "$GITHUB_SHA" --title "Rapoo Local $tag" --notes-file docs/RELEASE-NOTES.md "${flags[@]}"
+          gh release create "$tag" release-files/* --target "$GITHUB_SHA" --title "OpenRapoo $tag" --notes-file docs/RELEASE-NOTES.md "${flags[@]}"
