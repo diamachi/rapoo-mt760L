@@ -40,7 +40,7 @@ async function readJson(req) {
   let text = ''; for await (const chunk of req) { text += chunk; if (text.length > 4096) throw Error('Request body too large'); }
   return JSON.parse(text || '{}');
 }
-export function createAppServer({ native = runNative, platform = process.platform, measure = runRateMeasurement, development = false } = {}) {
+export function createAppServer({ native = runNative, platform = process.platform, measure = runRateMeasurement, development = false, inputMonitoringRequired = process.env.RAPOO_INPUT_MONITORING_REQUIRED === '1' } = {}) {
   const nativeAvailable = platform === 'darwin' || (platform === 'win32' && (native !== runNative || existsSync(path.join(root, 'native/windows-hid.exe'))));
   const measurementAvailable = platform === 'darwin' && (measure !== runRateMeasurement || existsSync(rateExecutable));
   const token = randomBytes(32).toString('hex'); let connectedId = null, measuring = false, batteryReading = false, writing = false;
@@ -53,7 +53,7 @@ export function createAppServer({ native = runNative, platform = process.platfor
     try {
       const url = new URL(req.url, `http://${host}`);
       const json = (data, code = 200) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(data)); };
-      if (req.method === 'GET' && url.pathname === '/api/info') { json({ app: 'openrapoo', version, development }); return; }
+      if (req.method === 'GET' && url.pathname === '/api/info') { json({ app: 'openrapoo', version, development, inputMonitoringRequired: platform === 'darwin' && inputMonitoringRequired }); return; }
       if (url.pathname.startsWith('/api/native/')) {
         if (!['status', 'connect', 'send', 'disconnect', 'measure-rate', 'battery'].some(name => url.pathname === '/api/native/' + name)) { json({ error: 'Not found' }, 404); return; }
         if (req.method === 'GET' && url.pathname === '/api/native/status') {
@@ -110,7 +110,7 @@ export function createAppServer({ native = runNative, platform = process.platfor
         const packets = JSON.parse(await readFile(path.join(root, 'data/protocol-fixture.json'), 'utf8'));
         res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(packets)); return;
       }
-      const routes = { '/action-picker.mjs':'public/action-picker.mjs', '/': 'public/index.html', '/style.css': 'public/style.css', '/controls.css': 'public/controls.css', '/mouse-map.css':'public/mouse-map.css', '/polish.css':'public/polish.css', '/preferences.js':'public/preferences.js', '/mouse-map.mjs':'public/mouse-map.mjs', '/assets/mt760l.webp':'public/assets/mt760l.webp', '/assets/app-icon.svg':'public/assets/app-icon.svg', '/app.mjs': 'public/app.mjs', '/src/protocol.mjs': 'src/protocol.mjs', '/src/transport.mjs': 'src/transport.mjs', '/src/native-client.mjs': 'src/native-client.mjs', '/src/buttons.mjs': 'src/buttons.mjs', '/src/polling.mjs': 'src/polling.mjs' };
+      const routes = { '/appearance.mjs':'public/appearance.mjs', '/layout.css':'public/layout.css', '/action-picker.mjs':'public/action-picker.mjs', '/': 'public/index.html', '/style.css': 'public/style.css', '/controls.css': 'public/controls.css', '/mouse-map.css':'public/mouse-map.css', '/polish.css':'public/polish.css', '/preferences.js':'public/preferences.js', '/mouse-map.mjs':'public/mouse-map.mjs', '/assets/mt760l.webp':'public/assets/mt760l.webp', '/assets/app-icon.svg':'public/assets/app-icon.svg', '/app.mjs': 'public/app.mjs', '/src/protocol.mjs': 'src/protocol.mjs', '/src/transport.mjs': 'src/transport.mjs', '/src/native-client.mjs': 'src/native-client.mjs', '/src/buttons.mjs': 'src/buttons.mjs', '/src/polling.mjs': 'src/polling.mjs' };
       const file = routes[url.pathname];
       if (!file) { res.writeHead(404).end('Not found'); return; }
       res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.css') ? 'text/css' : file.endsWith('.svg') ? 'image/svg+xml' : file.endsWith('.webp') ? 'image/webp' : 'text/javascript');

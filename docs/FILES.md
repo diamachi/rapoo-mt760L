@@ -22,6 +22,9 @@ This lists the files selected for the OpenRapoo source package. Installed apps u
 | `app/data/protocol-fixture.json` | Stripped 107-transfer protocol fixture for startup, developer explorer and synthetic parser tests; excludes host metadata and raw capture. |
 | `app/native/macos-hid.mjs` | Native receiver discovery, descriptors, probe and BA output reports through IOKit/CoreFoundation using Node FFI. |
 | `app/package.json` | Project identity/version and optional Node script aliases; no npm dependencies. |
+| `app/public/appearance.mjs` | Sends a validated light/dark theme to the native window hosts. |
+| `app/public/layout.css` | Fluid root sizing, scalable layout, receiver/lightning icons, container queries and shared assignment footer. |
+| `app/test/appearance.test.mjs` | Mac/Windows appearance-message routing, invalid theme rejection and browser fallback. |
 | `app/public/action-picker.mjs` | Searchable action menu, grouped choices, keyboard navigation and primary-lock synchronization. |
 | `app/public/app.mjs` | UI behavior, local DPI profile, theme toggle, action selection, writes/previews, logs and native/WebHID transport choice. |
 | `app/public/assets/README.md` | Product photo provenance and copyright attribution. |

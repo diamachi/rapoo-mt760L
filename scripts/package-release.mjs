@@ -34,7 +34,7 @@ if(target==='macos-arm64'){
   await cp(path.join(root,'packaging/assets/AppIcon.icns'),path.join(dest,'AppIcon.icns'));
   const executable=path.join(stage,'OpenRapoo.app/Contents/MacOS/OpenRapoo');
   const cache=path.join(root,'_toolchain/build-cache/swift');await mkdir(cache,{recursive:true});
-  execFileSync('/usr/bin/xcrun',['swiftc','-swift-version','5','-target','arm64-apple-macosx14.0','-module-cache-path',cache,'-file-prefix-map',`${root}=.`,'-O','-framework','AppKit','-framework','WebKit',path.join(root,'packaging/macos/main.swift'),'-o',executable],{stdio:'inherit'});
+  execFileSync('/usr/bin/xcrun',['swiftc','-swift-version','5','-target','arm64-apple-macosx14.0','-module-cache-path',cache,'-file-prefix-map',`${root}=.`,'-O','-framework','AppKit','-framework','WebKit','-framework','IOKit',path.join(root,'packaging/macos/main.swift'),'-o',executable],{stdio:'inherit'});
   execFileSync(executable,['--self-test'],{stdio:'inherit'});
   const rateHelper=path.join(dest,'app/native/macos-rate');
   execFileSync('/usr/bin/xcrun',['swiftc','-swift-version','5','-target','arm64-apple-macosx14.0','-module-cache-path',cache,'-file-prefix-map',`${root}=.`,'-O','-framework','IOKit',path.join(root,'app/native/macos-rate.swift'),'-o',rateHelper],{stdio:'inherit'});

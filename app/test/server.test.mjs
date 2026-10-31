@@ -126,3 +126,15 @@ test('native API refuses primary-click remaps without explicit per-request conse
     assert.equal((await post('send',{id:'123',hex:Buffer.from(encodeButton(0,'left')).toString('hex')})).status,200);
   } finally {await new Promise(resolve=>server.close(resolve));}
 });
+
+test('Input Monitoring onboarding is a Mac-only startup hint and performs no receiver operation',async()=>{
+  for(const platform of ['darwin','win32']){
+    let calls=0;
+    const server=createAppServer({platform,inputMonitoringRequired:true,native:async()=>{calls++;return {devices:[]}}});
+    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+    try {
+      const info=await(await fetch(`http://127.0.0.1:${server.address().port}/api/info`)).json();
+      assert.equal(info.inputMonitoringRequired,platform==='darwin');assert.equal(calls,0);
+    } finally {await new Promise(resolve=>server.close(resolve));}
+  }
+});

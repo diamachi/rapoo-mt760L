@@ -52,3 +52,21 @@ Source archives retain tests and research tools. Desktop bundles select executab
 ## Primary-click protection
 
 Left (input 0) and Right (input 2) action/shortcut fields are locked until explicitly unlocked. Switching inputs, resetting selection or successfully applying/previewing relocks them. The default left/right click report is always allowed for recovery. `requiresPrimaryClickConsent()` classifies non-default primary-click reports; the shared send path requires consent before connecting/sending, and the native API separately requires a boolean `confirmPrimaryClick: true` on that request. This prevents accidental editor changes and bypass through captured-write replay. It is an intent check, not a guarantee that another click remains assigned or an assertion of current device state. The searchable action picker keeps a hidden select as the encoder source of truth; it supports arrow keys, Escape, search and keyboard selection.
+
+## Responsive interface and native appearance
+
+Type and spacing use rem units with a fluid 16–21px root at Automatic size. The browser's CSS viewport respects operating-system display scaling and zoom; it does not guess physical monitor DPI. Settings → Interface size provides larger persisted sizes, applied before paint. The assignment section uses container queries and a shared action footer, keeping the map/editor/actions cohesive as the window changes size.
+
+The header receiver badge distinguishes detection from an opened receiver session. Its connected state is a transport session, not continuous physical-presence telemetry. The lightning symbol decorates a mouse-reported battery percentage and is not a charging-status claim.
+
+`appearance.mjs` posts only a light/dark message. Native hosts validate the local page origin and the theme; no new device operations are exposed. AppKit keeps the real title bar/traffic-light controls, using an explicit appearance and matching background. Windows keeps its system frame and applies DWM dark mode/caption colors where supported, falling back to system framing on older versions. Windows also opts into per-monitor DPI awareness before constructing any windows.
+
+Mac smoke checks require the native appearance to match the page theme. Source tests cover native-message routing and browser fallback. Browser QA can use a mocked receiver without hardware writes; mock battery/connection screenshots must be labeled as simulations. Windows compilation and visual appearance still require a Windows build/test for these changes.
+
+Platform references: [Apple native title-bar transparency](https://developer.apple.com/documentation/appkit/nswindow/titlebarappearstransparent), [Microsoft DWM window attributes](https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute).
+
+## macOS permission onboarding
+
+The native host checks `IOHIDCheckAccess(kIOHIDRequestTypeListenEvent)` before starting its child. If permission is missing, the UI shows help and skips automatic connection; a native sheet offers Open Input Monitoring / Not Now. Only clicking Open Input Monitoring calls `IOHIDRequestAccess` and opens the matching System Settings pane. The user enables access and restarts the app. Smoke tests never request permissions or show permission dialogs. The permission-required flag is informational startup state, not a grant; native HID access remains protected by macOS.
+
+Main-branch pushes now build/test Mac and Windows and upload artifacts. The publication job runs only for a v-prefixed tag push or a manual nonempty release tag.

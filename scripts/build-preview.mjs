@@ -19,7 +19,7 @@ await writeFile(path.join(app,'Contents/Info.plist'),plist);
 if(!plist.includes('<key>CFBundleExecutable</key><string>OpenRapoo</string>'))throw Error('Preview executable metadata must match the compiled OpenRapoo binary');
 function compile(source,dest,frameworks){execFileSync('/usr/bin/xcrun',['swiftc','-swift-version','5','-target','arm64-apple-macosx14.0','-module-cache-path',path.join(cache,'swift'),'-O',...frameworks.flatMap(x=>['-framework',x]),path.join(root,source),'-o',dest],{stdio:'inherit'});}
 compile('app/native/macos-rate.swift',path.join(cache,'macos-rate'),['IOKit']);
-compile('packaging/macos/main.swift',path.join(app,'Contents/MacOS/OpenRapoo'),['AppKit','WebKit']);
+compile('packaging/macos/main.swift',path.join(app,'Contents/MacOS/OpenRapoo'),['AppKit','WebKit','IOKit']);
 execFileSync(path.join(app,'Contents/MacOS/OpenRapoo'),['--self-test'],{stdio:'inherit'});
 execFileSync(path.join(cache,'macos-rate'),['--self-test'],{stdio:'inherit'});
 console.log(`Open ${app}\nUI edits: Command+R. Backend edits: quit and reopen. Nothing is installed or published.`);

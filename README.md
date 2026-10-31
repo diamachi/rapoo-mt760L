@@ -12,7 +12,7 @@ The app uses a native window on macOS and Windows. Normal use needs no terminal,
 
 ### Mouse status, battery and sensitivity
 
-The device card shows connection status and the mouse-reported battery percentage. Click a DPI stage to apply it, or expand **Customize stages** to edit the profile.
+The header includes a receiver connection icon. The device card shows the mouse-reported battery percentage with a lightning symbol; the symbol does not imply charging. Click a DPI stage to apply it, or expand **Customize stages** to edit the profile.
 
 ![OpenRapoo dark interface with mouse status and six DPI stages](docs/screenshots/overview.png)
 
@@ -39,7 +39,7 @@ Screenshots are actual local app captures from a hardware-isolated UI preview. D
 | Polling selection | Sends the captured/DLL-backed 125/250/500/1000 Hz configuration over the receiver. |
 | Report-rate measurement | Mac-only, six-second read of mouse-report timestamps; retains no movement coordinates or keyboard input. |
 | Battery | Reads the reported percentage on connection, every visible minute, or manual refresh. Wake the mouse if it times out. |
-| Appearance | Light mode and a Nord-style dark palette, with a matching mouse app icon. |
+| Appearance | Light/Nord dark themes, responsive type and spacing, and Settings → Interface size (Automatic / Larger / Extra large). Native title bars follow the app theme. |
 | Developer tools | Settings → Developer mode, or Cmd/Ctrl+Shift+D: packet explorer, command previews and activity log. |
 | Safe command preview | **Preview writes only** records the command without applying it. Leaving Developer mode turns this option off. |
 
@@ -49,6 +49,18 @@ DPI/button selections are an app profile and suggested defaults, **not live devi
 
 - **Mac Apple silicon, macOS 14+:** open the release DMG, drag **OpenRapoo** into Applications, then open it. Allow Input Monitoring if macOS requires it for receiver access, then quit and reopen.
 - **Windows x64:** run the release `…-windows-x64-setup.exe`, then open **OpenRapoo** from Start. Setup provides uninstall support and adds Microsoft WebView2 only if missing; that prerequisite download needs internet.
+
+### macOS: unsigned app and Input Monitoring
+
+After copying the trusted OpenRapoo download into Applications, if macOS blocks it because it is unsigned, run:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/OpenRapoo.app
+```
+
+Then open **OpenRapoo** again. This removes its download quarantine attribute; it does not sign or notarize the app.
+
+On first launch without access, OpenRapoo prompts for **Input Monitoring**. Choose **Open Input Monitoring**, enable **OpenRapoo** in **System Settings → Privacy & Security → Input Monitoring**, then quit and reopen the app. If it is not listed, use the **+** button to add `/Applications/OpenRapoo.app`. Choose **Not Now** to leave permission unchanged; the in-app help panel lets you reopen Settings later. A source-linked build is named **OpenRapoo Preview** instead.
 
 Closing the window stops the local service. The app works locally without an account or cloud service. Use the USB receiver: Bluetooth, Intel Mac, Linux desktop packaging and other mouse models are not verified.
 
@@ -121,7 +133,7 @@ The builder refuses an existing staging directory. For a new release, update `ap
 
 ### GitHub Actions
 
-**Actions → Build desktop apps → Run workflow** builds on Mac and Windows. Leave `release_tag` empty for artifacts only. After testing and approving a release, supply a matching tag such as `v1.0.0`, or deliberately push a matching `v*` tag. Publishing waits for both platform checks and checksum verification. Ordinary pushes to `main` do not publish or trigger this workflow. Existing releases are not overwritten.
+**Actions → Build desktop apps → Run workflow** builds on Mac and Windows. Leave `release_tag` empty for artifacts only. After testing and approving a release, supply a matching tag such as `v1.0.0`, or deliberately push a matching `v*` tag. Publishing waits for both platform checks and checksum verification. Pushes to `main` automatically build/test both platforms and upload artifacts, without publishing a release. Existing releases are not overwritten.
 
 ## Project layout
 

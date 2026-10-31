@@ -5,6 +5,7 @@ import { BUTTONS, KEYS, actionsForButton, encodeButton, requiresPrimaryClickCons
 import { POLLING_RATES, encodePolling } from '/src/polling.mjs';
 import { buildMouseMap } from '/mouse-map.mjs';
 import { createActionPicker } from '/action-picker.mjs';
+import { syncNativeAppearance } from '/appearance.mjs';
 const $ = id => document.getElementById(id);
 const logs = []; let packets = [], template, selected, busy = false;
 let packetsRendered=false;
@@ -13,9 +14,16 @@ function notice(message, error = false) {
   clearTimeout(noticeTimer);$('notice').hidden=false;$('notice').textContent=message;$('notice').classList.toggle('error',error);
   if(!error)noticeTimer=setTimeout(()=>$('notice').hidden=true,5000);
 }
-function updateThemeLabel(){const dark=document.documentElement.dataset.theme==='dark';$('theme-toggle').textContent=dark?'Light mode':'Dark mode';$('theme-toggle').setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');}
+function updateThemeLabel(){syncNativeAppearance(document.documentElement.dataset.theme);const dark=document.documentElement.dataset.theme==='dark';$('theme-toggle').textContent=dark?'Light mode':'Dark mode';$('theme-toggle').setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');}
+$('input-monitoring-settings').addEventListener('click',()=>{const bridge=window.webkit?.messageHandlers?.inputMonitoring;if(bridge)bridge.postMessage({action:'open-settings'});else notice('Open System Settings → Privacy & Security → Input Monitoring, enable OpenRapoo, then quit and reopen.');});
 $('theme-toggle').addEventListener('click',()=>{const theme=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=theme;try{localStorage.setItem('rapoo-theme',theme);}catch{}updateThemeLabel();});
 updateThemeLabel();
+const appMenu=document.querySelector('.app-menu');
+$('close-settings').addEventListener('click',()=>{appMenu.open=false;appMenu.querySelector('summary').focus();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&appMenu.open){appMenu.open=false;appMenu.querySelector('summary').focus();}});
+document.addEventListener('pointerdown',event=>{if(appMenu.open&&!appMenu.contains(event.target))appMenu.open=false;});
+$('ui-scale').value=document.documentElement.dataset.uiScale;
+$('ui-scale').addEventListener('change',()=>{const size=$('ui-scale').value;document.documentElement.dataset.uiScale=size;try{localStorage.setItem('openrapoo-ui-scale',size);}catch{}});
 function setDeveloper(enabled){if(enabled&&!packetsRendered&&packets.length)renderPackets();developerMode=enabled;document.documentElement.dataset.developer=String(enabled);$('developer-mode').checked=enabled;if(!enabled){previewOnly=false;$('preview-only').checked=false;}document.documentElement.dataset.preview=String(previewOnly);updateMode();}
 $('developer-mode').addEventListener('change',()=>setDeveloper($('developer-mode').checked));
 $('preview-only').addEventListener('change',()=>{previewOnly=$('preview-only').checked;document.documentElement.dataset.preview=String(previewOnly);updateMode();});
@@ -31,7 +39,8 @@ function log(kind, detail) {
   $('log-count').textContent=`${logs.length} entries`;
 }
 let transport = new WebHidTransport(navigator.hid, log), nativeMode = false, nativePlatform = null;
-function disconnected() { $('connect').hidden = false; $('disconnect').hidden = true; $('device-state').textContent = 'Receiver disconnected';$('battery-label').textContent='Battery —';$('battery-state').title='Reconnect the mouse to read its battery';$('battery-state').classList.remove('low');$('battery-refresh').disabled=true; updateMode(); }
+function setReceiverStatus(state){const labels={searching:'Finding receiver',detected:'Receiver detected',connected:'Receiver connected',disconnected:'Receiver offline'};const badge=$('receiver-status');badge.dataset.state=state;$('receiver-label').textContent=labels[state];badge.title=state==='connected'?'Receiver session connected · 2.4 GHz USB':state==='detected'?'USB receiver found; access has not been opened':'Connect the MT760L 2.4 GHz USB receiver';}
+function disconnected() { setReceiverStatus('disconnected'); $('connect').hidden = false; $('disconnect').hidden = true; $('device-state').textContent = 'Receiver disconnected';$('battery-label').textContent='Battery —';$('battery-state').title='Reconnect the mouse to read its battery';$('battery-state').classList.remove('low');$('battery-refresh').disabled=true; updateMode(); }
 transport.onLost = disconnected;
 async function localRequest(path, options) {
   const response = await fetch(path, options ? { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Rapoo-Token': options.token }, body: JSON.stringify(options.body) } : undefined);
@@ -39,6 +48,7 @@ async function localRequest(path, options) {
 }
 function connectionError(e) {
   if (nativePlatform === 'darwin' && /HID access|configuration interface|mouse-report measurement/i.test(e.message) && /not permitted|denied|0xe00002e2/i.test(e.message)) {
+    setReceiverStatus('detected');$('receiver-status').title='Receiver detected · allow Input Monitoring to connect';
     $('device-state').textContent = 'Receiver detected · macOS access denied';
     $('permission-help').hidden = false;
     return true;
@@ -99,12 +109,14 @@ function updateMode() {
 const primaryEditors=[];
 function syncPrimaryEditors(){primaryEditors.forEach(editor=>editor.sync());}
 function renderButtons() {
+  const footers=new Map();
   const selectButton=id=>{
     document.querySelectorAll('.action-picker-popup').forEach(popup=>{if(!popup.hidden)popup.previousElementSibling?.click();});
     primaryEditors.forEach(editor=>{editor.unlock.checked=false;editor.sync();});
     $('button-target').value=String(id);
     document.querySelectorAll('.button-row').forEach(row=>row.hidden=Number(row.dataset.inputId)!==id);
     document.querySelectorAll('.mouse-pin').forEach(pin=>pin.setAttribute('aria-pressed',String(Number(pin.dataset.inputId)===id)));
+    $('button-actions').replaceChildren(footers.get(id));updateMode();
     $('selected-input-number').textContent=`INPUT ${String(id+1).padStart(2,'0')}`;
   };
   const target=document.createElement('select');target.id='button-target';target.setAttribute('aria-label','Selected mouse input');
@@ -150,7 +162,7 @@ function renderButtons() {
     const reset=document.createElement('button');reset.textContent='Reset selection';reset.addEventListener('click',()=>{action.value=button.defaultAction;unlock.checked=false;refresh();syncProtection();info.textContent='Starting action selected · click Apply action to send';});
     const controls=document.createElement('div');controls.className='button-controls';const actionLabel=document.createElement('label');actionLabel.className='action-field';actionLabel.htmlFor=picker.trigger.id;const actionTitle=document.createElement('span');actionTitle.textContent='Assign an action';actionLabel.append(actionTitle,action,picker.element);controls.append(actionLabel);const applyRow=document.createElement('div');applyRow.className='button-apply-row';applyRow.append(apply,reset);
     const details=document.createElement('details');details.className='button-command developer-only';const summary=document.createElement('summary');summary.textContent='Command preview';details.append(summary,code);
-    row.append(heading,protection,controls,shortcut,applyRow,details);$('button-editor').append(row);refresh();
+    footers.set(button.id,applyRow);row.append(heading,protection,controls,shortcut,details);$('button-editor').append(row);refresh();
   }
   selectButton(0);
 }
@@ -203,7 +215,7 @@ function renderPackets() {
   }
 }
 async function connectMouse(){
-  const device = await transport.connect();updateMode();
+  const device = await transport.connect();setReceiverStatus('connected');updateMode();
   $('device-state').textContent = 'Connected · 2.4 GHz receiver';
   $('connect').hidden = true; $('disconnect').hidden = false;
   $('permission-help').hidden = true;
@@ -234,25 +246,29 @@ $('descriptor').addEventListener('click', () => run(async () => {
 $('support').textContent = navigator.hid ? 'WebHID available · select the USB receiver' : 'Device control needs desktop Chrome / Edge. Preview works here.';
 await run(async () => {
   const info=await(await fetch('/api/info')).json();$('local-preview').hidden=!info.development;
+  if(info.inputMonitoringRequired){$('permission-help').hidden=false;$('receiver-status').title='Input Monitoring is required before connecting';}
   const response = await fetch('/api/capture'); if (!response.ok) throw Error('Could not load the supplied capture');
   packets = await response.json(); loadDpi(packets.find(p => p.frame === 12),true);
   renderButtons(); renderPolling();
   const native = new NativeTransport(localRequest, log);
   const status = await native.status();
-  measurementAvailable=Boolean(status.measurementAvailable);
-  $('rate-test-support').textContent=measurementAvailable?'Native macOS HID · read only':'Native measurement is currently available in the local Mac preview.';
+  measurementAvailable=Boolean(status.measurementAvailable)&&!info.inputMonitoringRequired;
+  $('rate-test-support').textContent=info.inputMonitoringRequired?'Allow Input Monitoring and reopen the app to measure reports.':measurementAvailable?'Native macOS HID · read only':'Native measurement is currently available in the local Mac preview.';
   if (status.available) {
     transport = native; nativeMode = true; nativePlatform = status.platform;
     const receiver = status.devices?.find(d => d.compatible);
     $('support').textContent = 'Native '+(status.platform==='win32'?'Windows':'macOS')+' HID · receiver access';
     if (receiver) {
+      setReceiverStatus('detected');
       $('device-state').textContent = '2.4 GHz receiver detected · 24ae:1870';
       log('RECEIVER DETECTED', `${receiver.productName} · configuration report BA · ${status.devices.length} HID interfaces. No settings sent during connection.`);
-      await connectMouse();
+      if(info.inputMonitoringRequired){$('device-state').textContent='Receiver detected · Input Monitoring required';}
+      else await connectMouse();
     } else {
-      $('device-state').textContent = 'Receiver not detected';
+      setReceiverStatus('disconnected');$('device-state').textContent = 'Receiver not detected';
       notice(status.error || 'Plug in the MT760L 2.4 GHz USB receiver, then click Connect receiver to scan again.', Boolean(status.error));
     }
   }
+  if(!nativeMode){setReceiverStatus('disconnected');$('device-state').textContent='Connect your 2.4 GHz receiver';}
   log('APP READY', `${packets.length} capture packets loaded. App profile displayed. No settings sent during startup.`);
 });

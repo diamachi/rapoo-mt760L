@@ -1,13 +1,16 @@
 import AppKit
 import WebKit
+import IOKit.hidsystem
 
 // The application window owns its hidden local server. No Terminal or browser app.
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNavigationDelegate, WKDownloadDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNavigationDelegate, WKDownloadDelegate, WKScriptMessageHandler {
     var window: NSWindow!
     var webView: WKWebView!
     var server: Process?
     var timer: Timer?
     var closing = false
+    var monitoringPromptShown = false
+    var monitoringRequired = false
     var started = Date()
     let smoke = CommandLine.arguments.contains("--smoke-test")
     let workspace = Bundle.main.object(forInfoDictionaryKey: "RapooWorkspace") as? String
@@ -39,20 +42,67 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         edit.addItem(reload)
         editItem.submenu = edit
         NSApp.mainMenu = menu
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1200, height: 820), styleMask: [.titled,.closable,.miniaturizable,.resizable], backing: .buffered, defer: false)
+        let visible = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 900)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: min(1200, visible.width - 32), height: min(820, visible.height - 60)), styleMask: [.titled,.closable,.miniaturizable,.resizable], backing: .buffered, defer: false)
         window.title = preview ? "OpenRapoo · Local Preview" : "OpenRapoo"
-        window.minSize = NSSize(width: 760, height: 600)
+        window.minSize = NSSize(width: min(760, visible.width - 32), height: min(600, visible.height - 32))
         window.delegate = self
+        window.titlebarAppearsTransparent = true
         window.center()
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
+        config.userContentController.add(self, name: "appearance")
+        config.userContentController.add(self, name: "inputMonitoring")
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         webView.underPageBackgroundColor = .windowBackgroundColor
         window.contentView = webView
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        monitoringRequired = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) != kIOHIDAccessTypeGranted
         startServer()
+    }
+
+    // Keep the real macOS title bar and traffic-light controls; color it with the app.
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.frameInfo.isMainFrame,
+              let url = message.frameInfo.request.url, url.scheme == "http", url.host == "127.0.0.1", url.port == port,
+              let body = message.body as? [String: Any] else { return }
+        if message.name == "inputMonitoring", body["action"] as? String == "open-settings" {
+            openInputMonitoringSettings()
+            return
+        }
+        guard message.name == "appearance", body["type"] as? String == "appearance",
+              let theme = body["theme"] as? String, theme == "dark" || theme == "light" else { return }
+        let dark = theme == "dark"
+        window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        let color = dark ? NSColor(srgbRed: 46/255.0, green: 52/255.0, blue: 64/255.0, alpha: 1)
+                         : NSColor(srgbRed: 244/255.0, green: 245/255.0, blue: 239/255.0, alpha: 1)
+        window.backgroundColor = color
+        webView.underPageBackgroundColor = color
+    }
+
+    func openInputMonitoringSettings() {
+        guard !smoke else { return }
+        // This asks macOS to register/request access; only the user can approve it.
+        _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+        if let settings = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent") {
+            NSWorkspace.shared.open(settings)
+        }
+    }
+
+    func offerInputMonitoring() {
+        guard !smoke, !monitoringPromptShown, monitoringRequired else { return }
+        monitoringPromptShown = true
+        let alert = NSAlert()
+        let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "OpenRapoo"
+        alert.messageText = "Allow Input Monitoring for \(appName)"
+        alert.informativeText = "OpenRapoo needs Input Monitoring to connect to the MT760L receiver. Enable this app in System Settings → Privacy & Security → Input Monitoring, then quit and reopen it. No permission is enabled automatically."
+        alert.addButton(withTitle: "Open Input Monitoring")
+        alert.addButton(withTitle: "Not Now")
+        alert.beginSheetModal(for: window) { [weak self] response in
+            if response == .alertFirstButtonReturn { self?.openInputMonitoringSettings() }
+        }
     }
 
     @objc func reloadInterface() { webView.reload() }
@@ -66,6 +116,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         var env = ProcessInfo.processInfo.environment
         env["RAPOO_PORT"] = String(port)
         env["RAPOO_DEVELOPMENT"] = preview ? "1" : "0"
+        env["RAPOO_INPUT_MONITORING_REQUIRED"] = monitoringRequired ? "1" : "0"
         env["RAPOO_PARENT_PID"] = String(ProcessInfo.processInfo.processIdentifier)
         process.environment = env
         process.standardOutput = FileHandle.nullDevice
@@ -104,14 +155,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        if smoke { checkInterface(attempt: 0) }
+        if smoke { checkInterface(attempt: 0) } else { offerInputMonitoring() }
     }
 
     func checkInterface(attempt: Int) {
-        webView.evaluateJavaScript("document.querySelectorAll('.dpi-stage').length === 6 && document.querySelectorAll('.polling-rate').length === 4 && !document.getElementById('scroll')") { [weak self] result, _ in
+        webView.evaluateJavaScript("({ready:document.querySelectorAll('.dpi-stage').length === 6 && document.querySelectorAll('.polling-rate').length === 4 && !document.getElementById('scroll'),theme:document.documentElement.dataset.theme})") { [weak self] result, _ in
             guard let self = self else { return }
-            if result as? Bool == true {
-                print("{\"desktopSmokeTest\":\"passed\",\"terminalLaunched\":false}")
+            if let state = result as? [String: Any], state["ready"] as? Bool == true,
+               let theme = state["theme"] as? String,
+               self.window.appearance?.name == (theme == "dark" ? NSAppearance.Name.darkAqua : NSAppearance.Name.aqua) {
+                print("{\"desktopSmokeTest\":\"passed\",\"terminalLaunched\":false,\"nativeThemeMatched\":true}")
                 NSApp.terminate(nil)
             } else if attempt < 60 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { self.checkInterface(attempt: attempt + 1) }
@@ -125,7 +178,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let alert = NSAlert(); alert.messageText = "OpenRapoo"; alert.informativeText = message; alert.addButton(withTitle: "Quit"); alert.runModal()
         NSApp.terminate(nil)
     }
-    func cleanup() { closing = true; timer?.invalidate(); if server?.isRunning == true { server?.terminate(); server?.waitUntilExit() } }
+    func cleanup() { closing = true; webView?.configuration.userContentController.removeScriptMessageHandler(forName: "appearance"); webView?.configuration.userContentController.removeScriptMessageHandler(forName: "inputMonitoring"); timer?.invalidate(); if server?.isRunning == true { server?.terminate(); server?.waitUntilExit() } }
     func applicationWillTerminate(_ notification: Notification) { cleanup() }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { window?.makeKeyAndOrderFront(nil); return true }
