@@ -1,6 +1,6 @@
 # Third party notices
 
-Rapoo Local is unofficial. Rapoo and MT760L trademarks belong to their owners. Original project source is MIT licensed.
+OpenRapoo is unofficial. Rapoo and MT760L trademarks belong to their owners. Original project source is MIT licensed.
 
 ## Node
 
