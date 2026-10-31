@@ -32,7 +32,7 @@ The setup bundle includes Microsoft's signed WebView2 bootstrapper; installation
 
 The workflow builds on macos-15 arm64 and windows-2025 x64 when manually dispatched or when a v-prefixed tag is pushed. It tests source, packages each desktop app, runs window smoke tests and publishes build artifacts. The Mac artifact includes source ZIP, app ZIP, DMG and checksums. The Windows artifact includes desktop ZIP, setup EXE and checksums. Artifacts wrap the inner release files, so extract the artifact ZIP before attaching downloads to a release.
 
-The workflow builds artifacts only. It has read-only repository permissions and no release-publishing job. Test the local working copy and generated packages first. Create or update a GitHub release only after the owner has finished checking and explicitly approved that release. Do not infer approval from a request to implement a feature. No repository visibility changes are automatic. Personal documentation must not be uploaded. Normal pushes to main do not automatically run the manual/tag-only workflow. Packaging failures also appear in the job summary.
+The workflow publishes after both platform builds and desktop/install checks pass. Deliberately push a matching v-prefixed version tag, or run the workflow manually with `release_tag` (for example `v0.3.0-preview.1`). Leave that input empty for build artifacts only. Ordinary main pushes do not publish. A hyphenated tag produces a prerelease. Existing releases are not overwritten. The publishing job alone has contents write permission; checksums and required installers are verified before publication. The owner must approve publication first. Repository visibility is never changed, and personal documentation is excluded.
 
 
 ## Validation before release
