@@ -24,9 +24,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let item = NSMenuItem()
         menu.addItem(item)
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "About Rapoo Local", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: "About OpenRapoo", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Quit Rapoo Local", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Quit OpenRapoo", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.submenu = appMenu
         let editItem = NSMenuItem(); menu.addItem(editItem)
         let edit = NSMenu(title: "Edit")
@@ -40,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         editItem.submenu = edit
         NSApp.mainMenu = menu
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1200, height: 820), styleMask: [.titled,.closable,.miniaturizable,.resizable], backing: .buffered, defer: false)
-        window.title = preview ? "Rapoo Local · Local Preview" : "Rapoo Local"
+        window.title = preview ? "OpenRapoo · Local Preview" : "OpenRapoo"
         window.minSize = NSSize(width: 760, height: 600)
         window.delegate = self
         window.center()
@@ -70,7 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         process.environment = env
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
-        process.terminationHandler = { [weak self] _ in DispatchQueue.main.async { if let self = self, !self.closing { self.fail("The local app service stopped. Close other Rapoo Local instances, then reopen the app.") } } }
+        process.terminationHandler = { [weak self] _ in DispatchQueue.main.async { if let self = self, !self.closing { self.fail("The local app service stopped. Close other OpenRapoo instances, then reopen the app.") } } }
         server = process
         do { try process.run() } catch { fail("Could not start the bundled app service: \(error.localizedDescription)"); return }
         started = Date()
@@ -83,7 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         var request = URLRequest(url: home.appendingPathComponent("api/info"))
         request.timeoutInterval = 1
         URLSession.shared.dataTask(with: request) { [weak self] data, _, _ in
-            guard let data = data, let info = try? JSONSerialization.jsonObject(with: data) as? [String: Any], info["app"] as? String == "rapoo-local", (self?.preview == true || info["version"] as? String == Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) else { return }
+            guard let data = data, let info = try? JSONSerialization.jsonObject(with: data) as? [String: Any], info["app"] as? String == "openrapoo", (self?.preview == true || info["version"] as? String == Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) else { return }
             DispatchQueue.main.async {
                 guard let self = self, self.timer?.isValid == true, self.server?.isRunning == true else { return }
                 self.timer?.invalidate()
@@ -122,7 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func fail(_ message: String) {
         guard !closing else { return }
         if smoke { fputs(message + "\n", stderr); cleanup(); exit(1) }
-        let alert = NSAlert(); alert.messageText = "Rapoo Local"; alert.informativeText = message; alert.addButton(withTitle: "Quit"); alert.runModal()
+        let alert = NSAlert(); alert.messageText = "OpenRapoo"; alert.informativeText = message; alert.addButton(withTitle: "Quit"); alert.runModal()
         NSApp.terminate(nil)
     }
     func cleanup() { closing = true; timer?.invalidate(); if server?.isRunning == true { server?.terminate(); server?.waitUntilExit() } }
@@ -135,7 +135,7 @@ if CommandLine.arguments.contains("--self-test") {
     let resources = (Bundle.main.object(forInfoDictionaryKey: "RapooWorkspace") as? String).map({ URL(fileURLWithPath: $0) }) ?? Bundle.main.resourceURL!
     let files = ["scripts/desktop-server.mjs", "app/server.mjs", "_toolchain/portable-node-macos-arm64/node"]
     guard files.allSatisfy({ FileManager.default.fileExists(atPath: resources.appendingPathComponent($0).path) }) else { exit(1) }
-    print("Rapoo Local desktop launcher OK")
+    print("OpenRapoo desktop launcher OK")
 } else {
     let app = NSApplication.shared
     let delegate = AppDelegate()
