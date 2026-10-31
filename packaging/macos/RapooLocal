@@ -1,5 +1,0 @@
-#!/bin/sh
-set -eu
-resources="$(CDPATH= cd -- "$(dirname -- "$0")/../Resources" && pwd)"
-# Terminal keeps server lifetime and permission context explicit; no daemon is installed.
-exec /usr/bin/open -a Terminal "$resources/start-macos.command"
