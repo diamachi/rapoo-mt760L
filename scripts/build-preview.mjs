@@ -12,10 +12,11 @@ await mkdir(path.join(app,'Contents/Resources'),{recursive:true});
 await cp(path.join(root,'packaging/assets/AppIcon.icns'),path.join(app,'Contents/Resources/AppIcon.icns'));
 await mkdir(path.join(cache,'swift'),{recursive:true});
 let plist=await readFile(path.join(root,'packaging/macos/Info.plist'),'utf8');
-plist=plist.replaceAll('<string>OpenRapoo</string>','<string>OpenRapoo Preview</string>');
+plist=plist.replace(/(<key>CFBundle(?:Display)?Name<\/key>\s*)<string>OpenRapoo<\/string>/g,'$1<string>OpenRapoo Preview</string>');
 plist=plist.replace(/<key>CFBundleIdentifier<\/key>\s*<string>[^<]*<\/string>/,'<key>CFBundleIdentifier</key><string>io.openrapoo.preview</string>');
 plist=plist.replace('</dict>',`<key>RapooWorkspace</key><string>${root.replaceAll('&','&amp;').replaceAll('<','&lt;')}</string></dict>`);
 await writeFile(path.join(app,'Contents/Info.plist'),plist);
+if(!plist.includes('<key>CFBundleExecutable</key><string>OpenRapoo</string>'))throw Error('Preview executable metadata must match the compiled OpenRapoo binary');
 function compile(source,dest,frameworks){execFileSync('/usr/bin/xcrun',['swiftc','-swift-version','5','-target','arm64-apple-macosx14.0','-module-cache-path',path.join(cache,'swift'),'-O',...frameworks.flatMap(x=>['-framework',x]),path.join(root,source),'-o',dest],{stdio:'inherit'});}
 compile('app/native/macos-rate.swift',path.join(cache,'macos-rate'),['IOKit']);
 compile('packaging/macos/main.swift',path.join(app,'Contents/MacOS/OpenRapoo'),['AppKit','WebKit']);
