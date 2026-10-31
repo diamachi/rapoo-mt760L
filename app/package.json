@@ -1,6 +1,6 @@
 {
-  "name": "rapoo-local",
-  "version": "0.3.0",
+  "name": "openrapoo",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "Portable, dependency-free MT760L configuration workbench",

@@ -7,7 +7,7 @@ import { promisify } from 'node:util';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { fromHex, validateReport, addressOf } from './src/protocol.mjs';
-import { allowedParameterWrite } from './src/buttons.mjs';
+import { allowedParameterWrite, requiresPrimaryClickConsent } from './src/buttons.mjs';
 import { summarizeRate } from './src/rate-stats.mjs';
 import { decodeBatteryReport } from './src/battery.mjs';
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -53,7 +53,7 @@ export function createAppServer({ native = runNative, platform = process.platfor
     try {
       const url = new URL(req.url, `http://${host}`);
       const json = (data, code = 200) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(data)); };
-      if (req.method === 'GET' && url.pathname === '/api/info') { json({ app: 'rapoo-local', version, development }); return; }
+      if (req.method === 'GET' && url.pathname === '/api/info') { json({ app: 'openrapoo', version, development }); return; }
       if (url.pathname.startsWith('/api/native/')) {
         if (!['status', 'connect', 'send', 'disconnect', 'measure-rate', 'battery'].some(name => url.pathname === '/api/native/' + name)) { json({ error: 'Not found' }, 404); return; }
         if (req.method === 'GET' && url.pathname === '/api/native/status') {
@@ -96,6 +96,7 @@ export function createAppServer({ native = runNative, platform = process.platfor
             if (typeof body.hex !== 'string') throw Error('Expected report bytes');
             const bytes = validateReport(fromHex(body.hex));
             if (!allowedParameterWrite(bytes)) throw Error('Only supported parameter writes are allowed');
+            if(requiresPrimaryClickConsent(bytes) && body.confirmPrimaryClick!==true)throw Error('Unlock the primary-click assignment before applying this change');
             writing=true;
             try {json(await native('send', body.id, Buffer.from(bytes).toString('hex')));} finally {writing=false;}
             return;
@@ -109,7 +110,7 @@ export function createAppServer({ native = runNative, platform = process.platfor
         const packets = JSON.parse(await readFile(path.join(root, 'data/protocol-fixture.json'), 'utf8'));
         res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(packets)); return;
       }
-      const routes = { '/': 'public/index.html', '/style.css': 'public/style.css', '/controls.css': 'public/controls.css', '/mouse-map.css':'public/mouse-map.css', '/polish.css':'public/polish.css', '/preferences.js':'public/preferences.js', '/mouse-map.mjs':'public/mouse-map.mjs', '/assets/mt760l.webp':'public/assets/mt760l.webp', '/assets/app-icon.svg':'public/assets/app-icon.svg', '/app.mjs': 'public/app.mjs', '/src/protocol.mjs': 'src/protocol.mjs', '/src/transport.mjs': 'src/transport.mjs', '/src/native-client.mjs': 'src/native-client.mjs', '/src/buttons.mjs': 'src/buttons.mjs', '/src/polling.mjs': 'src/polling.mjs' };
+      const routes = { '/action-picker.mjs':'public/action-picker.mjs', '/': 'public/index.html', '/style.css': 'public/style.css', '/controls.css': 'public/controls.css', '/mouse-map.css':'public/mouse-map.css', '/polish.css':'public/polish.css', '/preferences.js':'public/preferences.js', '/mouse-map.mjs':'public/mouse-map.mjs', '/assets/mt760l.webp':'public/assets/mt760l.webp', '/assets/app-icon.svg':'public/assets/app-icon.svg', '/app.mjs': 'public/app.mjs', '/src/protocol.mjs': 'src/protocol.mjs', '/src/transport.mjs': 'src/transport.mjs', '/src/native-client.mjs': 'src/native-client.mjs', '/src/buttons.mjs': 'src/buttons.mjs', '/src/polling.mjs': 'src/polling.mjs' };
       const file = routes[url.pathname];
       if (!file) { res.writeHead(404).end('Not found'); return; }
       res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.css') ? 'text/css' : file.endsWith('.svg') ? 'image/svg+xml' : file.endsWith('.webp') ? 'image/webp' : 'text/javascript');
@@ -121,5 +122,5 @@ export function createAppServer({ native = runNative, platform = process.platfor
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const server = createAppServer();
   server.on('error', error => { console.error(error.message); process.exitCode = 1; });
-  server.listen(Number(process.env.RAPOO_PORT || 8760), '127.0.0.1', () => console.log(`Rapoo Local → http://127.0.0.1:${server.address().port}\nOpen in desktop Chrome / Edge. Ctrl+C stops the local server.`));
+  server.listen(Number(process.env.RAPOO_PORT || 8760), '127.0.0.1', () => console.log(`OpenRapoo → http://127.0.0.1:${server.address().port}\nOpen in desktop Chrome / Edge. Ctrl+C stops the local server.`));
 }
