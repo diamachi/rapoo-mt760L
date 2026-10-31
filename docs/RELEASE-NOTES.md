@@ -1,12 +1,9 @@
-# OpenRapoo 1.1.0
+# OpenRapoo 1.1.1
 
-- Responsive type and spacing for larger displays, with **Settings → Interface size** overrides.
-- Native title bars follow the app's light/dark theme. Windows adds per-monitor DPI awareness and display-fitting startup bounds.
-- Receiver connection indicator in the header and a lightning symbol beside the mouse-reported battery percentage (not a charging-status indicator).
-- Cohesive button map and editor with a shared Apply footer, improved callout spacing and a menu that fits larger text.
-- macOS Input Monitoring onboarding: when permission is missing, a prompt offers **Open Input Monitoring** or **Not Now**. Receiver auto-connection waits for permission; enable the app in System Settings, then quit and reopen.
-- README instructions for the unsigned Mac download, including `xattr -dr com.apple.quarantine /Applications/OpenRapoo.app`.
-- Main-branch pushes automatically build and test both platforms. Release publication still requires an explicit release request or tag.
+- Refined typography with DM Serif Display headings, italic lavender accents and DM Sans controls.
+- Fonts are bundled locally for offline use; no font installation or external font requests.
+- Updated README screenshots and documented CLI build/release commands.
+- Includes all v1.1.0 improvements: responsive scaling, themed native title bars, receiver indicator, cohesive button editor and macOS Input Monitoring onboarding.
 
 **Mac:** open the DMG and drag OpenRapoo into Applications. **Windows:** run the setup EXE and open OpenRapoo from Start. The portable runtime is included; normal use needs no terminal. Windows setup adds WebView2 only if missing (internet required for that prerequisite).
 
