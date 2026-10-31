@@ -48,3 +48,11 @@ test('rejects unsupported actions, invalid targets/shortcuts and malformed butto
   const c=encodeButton(3,'left');c[12]=1;assert.equal(allowedParameterWrite(c),false);
   for(const b of BUTTONS)for(const a of actionsForButton(b.id))assert.equal(allowedParameterWrite(encodeButton(b.id,a.id)),true);
 });
+
+test('changing a primary click requires consent; restoring its standard action and other inputs do not',async()=>{
+  const {requiresPrimaryClickConsent}=await import('../src/buttons.mjs');
+  assert.equal(requiresPrimaryClickConsent(encodeButton(0,'left')),false);
+  assert.equal(requiresPrimaryClickConsent(encodeButton(2,'right')),false);
+  for(const [id,action] of [[0,'disabled'],[0,'right'],[2,'left'],[2,'shortcut']])assert.equal(requiresPrimaryClickConsent(encodeButton(id,action)),true);
+  assert.equal(requiresPrimaryClickConsent(encodeButton(5,'disabled')),false);
+});

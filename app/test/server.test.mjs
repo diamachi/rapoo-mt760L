@@ -45,7 +45,9 @@ test('serves local app and capture; rejects unexpected hosts, mutations and unli
   const server = createAppServer(); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const url = `http://127.0.0.1:${server.address().port}`;
   try {
-    const home = await fetch(url); assert.equal(home.status, 200); assert.match(await home.text(), /MT760L/);
+    const home = await fetch(url); assert.equal(home.status, 200); assert.match(await home.text(), /OpenRapoo/);
+    assert.equal((await(await fetch(url+'/api/info')).json()).app,'openrapoo');
+    assert.equal((await fetch(url+'/action-picker.mjs')).status,200);
     assert.match(home.headers.get('content-security-policy'), /default-src 'self'/);
     const capture = await fetch(url + '/api/capture'); assert.equal((await capture.json()).length, 107);
     assert.equal((await fetch(url+'/api/native/scroll-status')).status,404);
@@ -72,7 +74,7 @@ test('Windows native desktop path uses the same protected receiver API and polli
   } finally {await new Promise(resolve=>server.close(resolve));}
 });
 test('native bridge requires same-origin session token and a probed receiver before writes', async () => {
-  const calls = [], device = { id: '4296065912', compatible: true, vendorId: 0x24ae, productId: 0x1870 };
+  const calls = [], device = { id: '1234567890', compatible: true, vendorId: 0x24ae, productId: 0x1870 };
   const native = async (op, ...args) => { calls.push([op, ...args]); return op === 'list' ? { devices: [device] } : { device, status: op === 'send' ? 'sent-unverified' : 'opened' }; };
   const server = createAppServer({ platform: 'darwin', native });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -103,4 +105,24 @@ test('native access-denied errors reach the UI as actionable JSON', async () => 
     const result = await fetch(url + '/api/native/connect', { method: 'POST', headers: { Origin: url, 'X-Rapoo-Token': status.token }, body: JSON.stringify({ id: '123' }) });
     assert.equal(result.status, 400); assert.match((await result.json()).error, /macOS denied/);
   } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test('native API refuses primary-click remaps without explicit per-request consent',async()=>{
+  const {encodeButton}=await import('../src/buttons.mjs');let sent=0;
+  const native=async op=>op==='list'?{devices:[{id:'123',compatible:true}]}:op==='send'?(sent++,{status:'sent-unverified'}):{device:{id:'123'}};
+  const server=createAppServer({native,platform:'darwin'});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${server.address().port}`;
+  try {
+    const {token}=await(await fetch(url+'/api/native/status')).json();
+    const post=(route,body)=>fetch(url+'/api/native/'+route,{method:'POST',headers:{Origin:url,'X-Rapoo-Token':token},body:JSON.stringify(body)});
+    await post('connect',{id:'123'});
+    for(const id of [0,2]){
+      const hex=Buffer.from(encodeButton(id,'disabled')).toString('hex');
+      assert.equal((await post('send',{id:'123',hex})).status,400);
+      assert.equal((await post('send',{id:'123',hex,confirmPrimaryClick:'true'})).status,400);
+      assert.equal((await post('send',{id:'123',hex,confirmPrimaryClick:true})).status,200);
+    }
+    assert.equal(sent,2);
+    assert.equal((await post('send',{id:'123',hex:Buffer.from(encodeButton(0,'left')).toString('hex')})).status,200);
+  } finally {await new Promise(resolve=>server.close(resolve));}
 });
