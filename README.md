@@ -39,7 +39,7 @@ Screenshots are actual local app captures from a hardware-isolated UI preview. D
 | Polling selection | Sends the captured/DLL-backed 125/250/500/1000 Hz configuration over the receiver. |
 | Report-rate measurement | Mac-only, six-second read of mouse-report timestamps; retains no movement coordinates or keyboard input. |
 | Battery | Reads the reported percentage on connection, every visible minute, or manual refresh. Wake the mouse if it times out. |
-| Appearance | Light/Nord dark themes, responsive type and spacing, and Settings → Interface size (Automatic / Larger / Extra large). Native title bars follow the app theme. |
+| Appearance | Light/Nord dark themes, bundled DM Serif Display/DM Sans typography, responsive type and spacing, and Settings → Interface size (Automatic / Larger / Extra large). Native title bars follow the app theme. |
 | Developer tools | Settings → Developer mode, or Cmd/Ctrl+Shift+D: packet explorer, command previews and activity log. |
 | Safe command preview | **Preview writes only** records the command without applying it. Leaving Developer mode turns this option off. |
 

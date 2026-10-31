@@ -1,0 +1,30 @@
+{
+  "provider": "Google Fonts",
+  "cssUrl": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400..700&family=DM+Serif+Display:ital@0;1&display=swap",
+  "fonts": [
+    {
+      "name": "dm-sans-latin.woff2",
+      "family": "DM Sans",
+      "style": "normal",
+      "url": "https://fonts.gstatic.com/s/dmsans/v17/rP2Yp2ywxg089UriI5-g4vlH9VoD8Cmcqbu0-K4.woff2",
+      "bytes": 36932,
+      "sha256": "9fea608a947e67020c33cad9a6fe3d60c54119dfb8cff87768a8117a15ed7543"
+    },
+    {
+      "name": "dm-serif-display-italic-latin.woff2",
+      "family": "DM Serif Display",
+      "style": "italic",
+      "url": "https://fonts.gstatic.com/s/dmserifdisplay/v17/-nFhOHM81r4j6k0gjAW3mujVU2B2G_VB0PD2.woff2",
+      "bytes": 24572,
+      "sha256": "ed8b291611e32fa2d2900488dd48fc95faf0957b2ef7ddf1527e8d21dd9cf2df"
+    },
+    {
+      "name": "dm-serif-display-latin.woff2",
+      "family": "DM Serif Display",
+      "style": "normal",
+      "url": "https://fonts.gstatic.com/s/dmserifdisplay/v17/-nFnOHM81r4j6k0gjAW3mujVU2B2G_Bx0g.woff2",
+      "bytes": 24744,
+      "sha256": "fdf61e20fd2c0108e0ea28da4daca0035205b4b7fc031a3974b865b704de160a"
+    }
+  ]
+}

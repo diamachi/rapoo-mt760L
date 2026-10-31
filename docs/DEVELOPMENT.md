@@ -70,3 +70,7 @@ Platform references: [Apple native title-bar transparency](https://developer.app
 The native host checks `IOHIDCheckAccess(kIOHIDRequestTypeListenEvent)` before starting its child. If permission is missing, the UI shows help and skips automatic connection; a native sheet offers Open Input Monitoring / Not Now. Only clicking Open Input Monitoring calls `IOHIDRequestAccess` and opens the matching System Settings pane. The user enables access and restarts the app. Smoke tests never request permissions or show permission dialogs. The permission-required flag is informational startup state, not a grant; native HID access remains protected by macOS.
 
 Main-branch pushes now build/test Mac and Windows and upload artifacts. The publication job runs only for a v-prefixed tag push or a manual nonempty release tag.
+
+## Typography
+
+`fonts.css` pairs DM Serif Display (regular/italic headings) with DM Sans (variable-weight controls/body). Three Latin WOFF2 subsets add about 86 KB, with OFL licenses and provenance under `app/public/assets/fonts/`. All font URLs are local whitelisted routes; runtime use needs no Google Fonts connection or OS font installation. Keep diagnostic byte displays monospaced and numeric controls tabular. The CLI release/build path is documented in PUBLISHING.md; only this checkout's Git identity is configured, using the GitHub handle/noreply address.

@@ -1,0 +1,17 @@
+/* Open-license Latin subsets are bundled: no font service is contacted at runtime. */
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url('/assets/fonts/dm-sans-latin.woff2') format('woff2')}
+@font-face{font-family:'DM Serif Display';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/dm-serif-display-latin.woff2') format('woff2')}
+@font-face{font-family:'DM Serif Display';font-style:italic;font-weight:400;font-display:swap;src:url('/assets/fonts/dm-serif-display-italic-latin.woff2') format('woff2')}
+:root{--font-ui:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--font-display:'DM Serif Display',Georgia,serif;--headline-accent:#78618d;font-family:var(--font-ui)}
+html[data-theme=dark]{--headline-accent:#c4b2da}
+.hero-copy{min-width:0;flex:1}
+h1{font-family:var(--font-display);font-weight:400;font-size:clamp(2.25rem,3.4vw,3.4rem);line-height:1.12;letter-spacing:-.035em;margin-bottom:.5rem;text-wrap:balance}
+h1 em{font-style:italic;color:var(--headline-accent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--headline-accent) 25%,transparent);text-decoration-thickness:1px;text-underline-offset:.16em}
+h2,.section-head h2,.button-panel .button-row h3,.dev-heading h2{font-family:var(--font-display);font-weight:400;letter-spacing:-.025em;line-height:1.2}
+.section-head h2{font-size:1.875rem}
+.button-panel .button-row h3{font-size:1.75rem}
+.device h2,.dpi-stage strong,.polling-rate,.battery-state{font-family:var(--font-ui);font-variant-numeric:tabular-nums}
+.brand span{font-family:var(--font-ui);font-weight:700;letter-spacing:-.04em}
+.eyebrow,.map-view-label,.action-picker-group{letter-spacing:.14em}
+button,input,select{font-family:var(--font-ui)}
+@media(max-width:760px){h1{font-size:clamp(2.1rem,7.5vw,2.8rem)}.section-head h2{font-size:1.65rem}.button-panel .button-row h3{font-size:1.65rem}}

@@ -48,6 +48,8 @@ test('serves local app and capture; rejects unexpected hosts, mutations and unli
     const home = await fetch(url); assert.equal(home.status, 200); assert.match(await home.text(), /OpenRapoo/);
     assert.equal((await(await fetch(url+'/api/info')).json()).app,'openrapoo');
     assert.equal((await fetch(url+'/action-picker.mjs')).status,200);
+    assert.equal((await fetch(url+'/fonts.css')).status,200);
+    const font=await fetch(url+'/assets/fonts/dm-sans-latin.woff2');assert.equal(font.headers.get('content-type'),'font/woff2');assert.equal(Buffer.from(await font.arrayBuffer()).toString('ascii',0,4),'wOF2');
     assert.match(home.headers.get('content-security-policy'), /default-src 'self'/);
     const capture = await fetch(url + '/api/capture'); assert.equal((await capture.json()).length, 107);
     assert.equal((await fetch(url+'/api/native/scroll-status')).status,404);

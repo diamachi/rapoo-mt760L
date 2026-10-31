@@ -23,6 +23,8 @@ This lists the files selected for the OpenRapoo source package. Installed apps u
 | `app/native/macos-hid.mjs` | Native receiver discovery, descriptors, probe and BA output reports through IOKit/CoreFoundation using Node FFI. |
 | `app/package.json` | Project identity/version and optional Node script aliases; no npm dependencies. |
 | `app/public/appearance.mjs` | Sends a validated light/dark theme to the native window hosts. |
+| `app/public/fonts.css` | Offline DM Sans/DM Serif Display faces, editorial headings and italic headline accent. |
+| `app/public/assets/fonts/` | Bundled Latin WOFF2 subsets, upstream OFL licenses and provenance/hashes. |
 | `app/public/layout.css` | Fluid root sizing, scalable layout, receiver/lightning icons, container queries and shared assignment footer. |
 | `app/test/appearance.test.mjs` | Mac/Windows appearance-message routing, invalid theme rejection and browser fallback. |
 | `app/public/action-picker.mjs` | Searchable action menu, grouped choices, keyboard navigation and primary-lock synchronization. |

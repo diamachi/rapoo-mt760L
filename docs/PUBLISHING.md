@@ -44,3 +44,16 @@ The workflow publishes after both platform builds and desktop/install checks pas
 5. Publish tested outputs only after explicit approval. These packages remain unsigned; Signing/notarization requires a separate setup.
 
 Official API references: Microsoft WebView2 distribution https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution and HID output reports https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/hidsdi/nf-hidsdi-hidd_setoutputreport .
+
+## Trigger from the command line
+
+Git CLI pushes are verified in this workspace. No separate GitHub CLI token is required for its build/release path.
+
+After committing reviewed source changes, `git push origin main` triggers a build-only run. To publish an approved version, first update the package/installer versions and release notes, commit and push them, then push the matching tag:
+
+```sh
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+Use the version actually recorded in `app/package.json`; the example tag is not a request to publish it. A v-prefixed tag runs both platform builds and checks, then publishes installers and checksums. Never move an existing release tag. The browser's manual release form is an alternative, not a requirement.
