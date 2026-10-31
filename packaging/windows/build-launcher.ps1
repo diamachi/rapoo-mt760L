@@ -16,6 +16,8 @@ foreach ($file in @($forms.FullName, $core, "$cache/runtimes/win-x64/native/WebV
 $licenses = Get-ChildItem $cache -Recurse -File | Where-Object {$_.Name -match '^(LICENSE|License)(\.txt)?$'}
 if (!$licenses) { throw 'WebView2 SDK license not found' }
 Copy-Item $licenses[0].FullName (Join-Path $OutputDirectory 'WebView2-LICENSE.txt') -Force
+# Runtime packages omit Mac source, so create the native helper destination explicitly.
+New-Item -ItemType Directory -Path (Join-Path $OutputDirectory 'app/native') -Force | Out-Null
 & $compiler /nologo /target:exe /platform:x64 /reference:System.Web.Extensions.dll "/out:$OutputDirectory/app/native/windows-hid.exe" (Join-Path $PSScriptRoot 'HidBridge.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Native HID bridge compilation failed' }
 & $compiler /nologo /target:winexe /platform:x64 "/win32icon:$PSScriptRoot/../assets/app-icon.ico" /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Net.Http.dll /reference:System.Web.Extensions.dll "/reference:$($forms.FullName)" "/reference:$core" "/out:$OutputDirectory/OpenRapoo.exe" (Join-Path $PSScriptRoot 'Launcher.cs')
