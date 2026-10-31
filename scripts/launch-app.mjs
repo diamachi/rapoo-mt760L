@@ -15,14 +15,14 @@ server.once('error', async error => {
   if (error.code === 'EADDRINUSE') {
     try {
       const info = await (await fetch(`${url}/api/info`, { signal: AbortSignal.timeout(2000) })).json();
-      if (info.app === 'rapoo-local') { console.log('Rapoo Local is already running. Opening it.'); openBrowser(); return; }
+      if (info.app === 'openrapoo') { console.log('OpenRapoo is already running. Opening it.'); openBrowser(); return; }
     } catch {}
   }
-  console.error(`Could not start Rapoo Local: ${error.message}\nClose the other process or choose another RAPOO_PORT.`);
+  console.error(`Could not start OpenRapoo: ${error.message}\nClose the other process or choose another RAPOO_PORT.`);
   process.exitCode = 1;
 });
 server.listen(port, '127.0.0.1', () => {
-  console.log(`Rapoo Local → ${url}\nKeep this terminal open. Ctrl+C quits this developer server.\nWindows device control requires Chrome or Edge.`);
+  console.log(`OpenRapoo → ${url}\nKeep this terminal open. Ctrl+C quits this developer server.\nWindows device control requires Chrome or Edge.`);
   openBrowser();
 });
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => {

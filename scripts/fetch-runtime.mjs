@@ -1,5 +1,5 @@
-// Used on GitHub-hosted builders only. No global installation or package manager.
-import {mkdir,readFile,writeFile,cp} from 'node:fs/promises';
+// Fetch a verified portable runtime for local work or CI. No global installation.
+import {mkdir,writeFile,cp} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 const target=process.argv[2],version='26.4.0';
