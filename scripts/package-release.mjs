@@ -15,7 +15,7 @@ try{await access(stage);throw Error(`Staging folder exists: ${stage}. Bump the v
 await mkdir(stage,{recursive:true});
 async function files(dir){let result=[];for(const entry of await readdir(path.join(root,dir),{withFileTypes:true})){if(entry.name==='.DS_Store')continue;const p=path.posix.join(dir,entry.name);if(entry.isDirectory())result.push(...await files(p));else if(!p.endsWith('.exe'))result.push(p);}return result.sort();}
 const appFiles=await files('app');
-const docs=['README.md','LICENSE','THIRD_PARTY_NOTICES.md','docs/FILES.md','docs/PUBLISHING.md','docs/DEVELOPMENT.md','docs/LOCAL-TESTING.md','research/PROTOCOL.md','research/BUTTONS-AND-SCROLL.md','research/POLLING-RATE.md','research/BATTERY.md'];
+const docs=['README.md','LICENSE','THIRD_PARTY_NOTICES.md','docs/FILES.md','docs/PUBLISHING.md','docs/DEVELOPMENT.md','docs/LOCAL-TESTING.md','docs/RELEASE-NOTES.md','research/PROTOCOL.md','research/BUTTONS-AND-SCROLL.md','research/POLLING-RATE.md','research/BATTERY.md'];
 const shared=[...docs,...appFiles,'scripts/desktop-server.mjs','scripts/decode-capture.mjs'];
 const source=[...shared,'AGENTS.md','.gitignore','.github/workflows/release.yml','start-macos.command','start-windows.cmd','start-linux.sh','test-macos.command',...await files('packaging'),...await files('scripts')];
 let dest=stage;
