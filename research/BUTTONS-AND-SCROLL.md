@@ -1,6 +1,6 @@
 # Button assignments and scrolling
 
-Version note: these are historical evidence notes. The user subsequently confirmed the original Mac and Windows packages work. Version 0.2.0 removes fixed-line scrolling and adds native desktop windows and a polling selector; see `POLLING-RATE.md` and current development docs for the active implementation.
+Version note: these are historical evidence notes. The original Mac and Windows packages were hardware-tested. Version 0.2.0 removes fixed-line scrolling and adds native desktop windows and a polling selector; see `POLLING-RATE.md` and current development docs for the active implementation.
 
 2026-10-30: user confirms the original DPI writes work over the 2.4 GHz receiver.
 

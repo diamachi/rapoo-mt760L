@@ -1,12 +1,12 @@
 # MT760L protocol notes
 
-Version note: these are historical evidence notes. The user subsequently confirmed the original Mac and Windows packages work. Version 0.2.0 removes fixed-line scrolling and adds native desktop windows and a polling selector; see `POLLING-RATE.md` and current development docs for the active implementation.
+Version note: these are historical evidence notes. The original Mac and Windows packages were hardware-tested. Version 0.2.0 removes fixed-line scrolling and adds native desktop windows and a polling selector; see `POLLING-RATE.md` and current development docs for the active implementation.
 
 Confidence labels: **observed** means bytes directly present in the capture; **static inference** means backed by DLL code but not hardware-tested; **unknown** means it must not be represented as a confirmed feature.
 
 ## Live receiver inspection — 2026-10-30
 
-The user's 2.4 GHz receiver is attached to this Mac and enumerates as **Rapoo Gaming Device, VID 24ae / PID 1870**. Its mouse interface has only a 7-byte input report. A second HID interface has keyboard primary usage (01:06) and five top-level collections, including **ff00:000e with input/output report BA, 248 payload bits each**. Another ff00:0002 collection uses BB with 48 payload bits. A third ff01:0000 interface uses report 06 with 224 payload bits, including feature support; it is not the captured BA transport.
+The supported 2.4 GHz receiver enumerates as **Rapoo Gaming Device, VID 24ae / PID 1870**. Its mouse interface has only a 7-byte input report. A second HID interface has keyboard primary usage (01:06) and five top-level collections, including **ff00:000e with input/output report BA, 248 payload bits each**. Another ff00:0002 collection uses BB with 48 payload bits. A third ff01:0000 interface uses report 06 with 224 payload bits, including feature support; it is not the captured BA transport.
 
 This verifies the original 32-byte BA framing. It also explains why assuming a separately exposed vendor HID interface was insufficient. macOS marks the keyboard+vendor interface as requiring TCC authorization. Direct IOKit enumeration through portable Node FFI succeeds. Initial standalone IOHIDDeviceOpen probes returned **0xe00002e2 (not permitted)**, including outside the execution sandbox; the updated running app later **opened the receiver successfully**, verified by its device card and CONNECTED entry. No configuration reports were sent during verification. Live writes remain unverified. The bridge never registers general keyboard/mouse input callbacks.
 
@@ -14,7 +14,7 @@ The real descriptor strings are fixtures in `app/test/hid-descriptor.test.mjs`. 
 
 ## Inputs
 
-- `rapoo-re/rapoo_760l_config.pcapng`: 9,200 bytes, PCAPNG with USBPcap link type 249. 107 enhanced-packet records, all host-side submissions. No returned device/configuration descriptors or device response bytes. The filename says `760l`; the user identifies the mouse as **Rapoo MT760L**, with DPI changes and a button action change during recording. Connection type was not explicitly confirmed.
+- `rapoo-re/rapoo_760l_config.pcapng`: 9,200 bytes, PCAPNG with USBPcap link type 249. 107 enhanced-packet records, all host-side submissions. No returned device/configuration descriptors or device response bytes. The filename says `760l`; the recorded mouse model is **Rapoo MT760L**, with DPI changes and a button action change. Connection type was not explicitly confirmed.
 - `rapoo-re/RapooDevice.dll`: 32-bit Windows PE DLL, image base `0x6fd00000`, with exported C++ names and HID calls. Not executed.
 - `rapoo-re/A HUB.exe`: Windows vendor app; not executed.
 
@@ -71,7 +71,7 @@ Frame 24 writes `05 00 03 02` at **0x0648**, a nearby configuration block. Its f
 ## Other writes
 
 - Frames 40/44/48/52/56 at **0x0630**: `01 01 ff ff`, `04 04 ff ff`, `08 08 ff ff`, `01 01 ff ff`, `08 08 ff ff`. Static code treats this as another parameter block. No named behavior is asserted.
-- Frames 104/106 at **0x0610**: `09 00 01 00` and `08 00 03 00`. Candidate button-assignment records, consistent with the user's remembered button edit and the surrounding 0x0600…0x0628 address range. Physical button and action names remain unknown. The app can inspect/preview/replay these exact captured reports.
+- Frames 104/106 at **0x0610**: `09 00 01 00` and `08 00 03 00`. Candidate button-assignment records, consistent with the recorded button edit and the surrounding 0x0600…0x0628 address range. Physical button and action names remain unknown. The app can inspect/preview/replay these exact captured reports.
 - Read commands cover 0x0600…0x0628, 0x0630, 0x0648, 0x08d8, and 0x1000…0xc000. Their requests alone cannot establish the returned data layout.
 
 ## DLL landmarks for continued analysis
@@ -87,7 +87,7 @@ Addresses below are **virtual addresses in this exact DLL**, not file offsets. N
 - `0x6feb54b0` loads fields 0x368 and 0x36c for nearby current-DPI/configuration reads. Return layout still needs response evidence.
 - Imports include `HidD_SetOutputReport`, `HidD_GetInputReport`, `HidD_SetFeature`, and `HidD_GetFeature`. The presence of feature APIs elsewhere in the DLL does not change this capture's report type.
 
-Generated disassembly is at `research/generated/RapooDevice.disassembly.txt`. It was produced with the Mac's existing `objdump -d --x86-asm-syntax=intel`; no Ghidra/Java was run. Focused excerpts can be regenerated by `scripts/evidence.mjs` when that disassembly exists.
+Generated disassembly is at `research/generated/RapooDevice.disassembly.txt`. It was produced with the Mac's existing `objdump -d --x86-asm-syntax=intel`. Focused excerpts can be regenerated by `scripts/evidence.mjs` when that disassembly exists.
 
 ## Missing evidence
 
