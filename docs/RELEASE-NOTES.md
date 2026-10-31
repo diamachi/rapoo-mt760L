@@ -1,9 +1,14 @@
-Native Mac and Windows apps with a mouse-shaped Dock/taskbar icon, Nord-style dark theme and mouse-reported battery percentage.
+# OpenRapoo 0.4.0 preview
 
-- Polling selector: 125 / 250 / 500 / 1000 Hz. Native Mac timing checks were confirmed by the owner.
-- Battery reads on connection, each visible minute, or manual refresh. Wake the mouse if a read times out.
-- Six-second native Mac report-rate measurement, without changing settings.
-- Mac: open the DMG and drag to Applications. Windows: run the setup EXE, then open from Start.
-- Source ZIP, portable app ZIPs and SHA-256 sidecars are included.
+- Renamed the application, native windows, Dock/taskbar identity and packages to **OpenRapoo**.
+- Cleaner visual button map with smaller numbers and separated wheel callouts.
+- Wider, searchable action menu with grouped options and keyboard navigation.
+- Left/right click assignments are locked until explicitly unlocked. The native API also checks per-request consent; resetting or applying relocks the editor.
+- Updated screenshots, portable source-build instructions and file guide; smaller runtime file selection and lazy developer packet rendering.
+- DPI stages, polling selector, mouse-reported battery and Nord-style dark mode remain available.
 
-The packages are unsigned. Windows setup adds Microsoft WebView2 only if missing (internet required for that step). Battery and taskbar changes on Windows still need physical/visual testing. No firmware setting readback is claimed. Personal documentation is excluded. Repository visibility is unchanged.
+**Mac:** open the DMG and drag OpenRapoo into Applications. **Windows:** run the setup EXE and open OpenRapoo from Start. Normal use needs no terminal. The app bundles Node; Windows adds WebView2 only if missing (internet required for that prerequisite).
+
+These packages are unsigned previews. Renaming the Mac app may require granting Input Monitoring to OpenRapoo and restarting it. The new app identity uses a separate window profile; previous UI preferences may need to be selected again. Remove the old installation when it is no longer needed.
+
+Automated source/native-window/install checks do not establish every hardware action. Battery reporting and polling timing have been checked on Mac; Windows battery behavior still needs a physical check. A transmitted write is not firmware readback. Personal documentation and original vendor inputs are excluded.

@@ -29,16 +29,26 @@ Tests use the stripped fixture and synthetic USBPcap reconstruction, plus real H
 
 The Mac executable accepts `--self-test` for bundle layout and `--smoke-test` to launch its actual embedded interface and quit after checking six DPI stages, four polling options and no scrolling section. The Windows GUI has equivalent flags, and its separate HID helper has a structure-layout self-test and read-only enumeration check. A desktop window smoke test also checks that its local child exits.
 
-Builds stay under dist/. Personal documentation stays under personal/ and is ignored locally. The original Rapoo inputs and generated disassembly remain for future research. The unused Ghidra/Windows JDK/REA tool trees, npm wrappers and old build outputs were deleted at the user's request; only minimal labeled build runtimes remain.
+Builds stay under dist/. Personal documentation stays under personal/ and is ignored locally. The original Rapoo inputs and generated disassembly remain for future research. Only minimal labeled portable build runtimes remain.
 
-## Local working preview after 0.2.0
+## Local working preview
 
-See [local testing](LOCAL-TESTING.md). The generated `preview/Rapoo Local Preview.app` reads this workspace directly on port 8760. Command+R reloads frontend changes; quit/reopen after server changes. The installed release keeps its bundled resources on port 8765. Nord-style slate/blue/lilac colors replace the green dark theme. No new release has been published for these changes.
+See [local testing](LOCAL-TESTING.md). The generated `preview/OpenRapoo Preview.app` reads this workspace directly on port 8760. Command+R reloads frontend changes; quit/reopen after server changes. The installed release keeps its bundled resources on port 8765. Nord-style slate/blue/lilac colors replace the green dark theme. Build-only workflow runs can validate packages before a release is approved.
 
-The optional native Mac measurement compiles `app/native/macos-rate.swift` into the local build cache (or into a future Mac package). Its authenticated six-second API returns timing summaries only; while measuring, writes and concurrent measurements are refused. The helper validates the exact known mouse descriptor and listens only to that interface. Input Monitoring permission may be required. This measures observed movement-report timing, not device configuration readback.
+The optional native Mac measurement compiles `app/native/macos-rate.swift` into the local build cache (or into a Mac package). Its authenticated six-second API returns timing summaries only; while measuring, writes and concurrent measurements are refused. The helper validates the exact known mouse descriptor and listens only to that interface. Input Monitoring permission may be required. This measures observed movement-report timing, not device configuration readback.
 
 ## Battery and icon working changes
 
-The header shows the mouse-reported battery percentage. The fixed `BA A5 AA` query and three-byte reply are documented in `research/BATTERY.md`. Reads are token protected, serialized against measurements/writes, briefly cached, and refreshed on connection/every visible minute. Unavailable values are shown as unavailable. Windows source includes the native query, pending physical validation; no release was created.
+The header shows the mouse-reported battery percentage. The fixed `BA A5 AA` query and three-byte reply are documented in `research/BATTERY.md`. Reads are token protected, serialized against measurements/writes, briefly cached, and refreshed on connection/every visible minute. Unavailable values are shown as unavailable. Windows source includes the native query, pending physical validation.
 
 Edit `app/public/assets/app-icon.svg` for app artwork, then run the portable Node with `scripts/build-icons.mjs` on this Mac. It uses only existing Apple tools. Rebuild the local preview to update its bundled ICNS. Windows compilation embeds the generated ICO, and setup uses the same icon.
+
+## Runtime cleanup
+
+The packet table is built lazily when Developer mode is first opened. Logs and capture data remain available, while normal startup avoids creating the hidden explorer rows. Unused styles for the old CSS mouse drawing, old DPI inputs and removed capture tiles have been removed.
+
+Source archives retain tests and research tools. Desktop bundles select executable app modules/assets only, omit test files/native Swift source and research scripts, and compile their platform helpers into the staged bundle. Windows bundles omit the unused Mac HID source. The portable Node runtime remains required; no runtime-size claim is inferred from the smaller source selection.
+
+## Primary-click protection
+
+Left (input 0) and Right (input 2) action/shortcut fields are locked until explicitly unlocked. Switching inputs, resetting selection or successfully applying/previewing relocks them. The default left/right click report is always allowed for recovery. `requiresPrimaryClickConsent()` classifies non-default primary-click reports; the shared send path requires consent before connecting/sending, and the native API separately requires a boolean `confirmPrimaryClick: true` on that request. This prevents accidental editor changes and bypass through captured-write replay. It is an intent check, not a guarantee that another click remains assigned or an assertion of current device state. The searchable action picker keeps a hidden select as the encoder source of truth; it supports arrow keys, Escape, search and keyboard selection.

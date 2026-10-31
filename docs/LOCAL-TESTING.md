@@ -1,6 +1,6 @@
 # Test changes without reinstalling
 
-Open `preview/Rapoo Local Preview.app` directly in Finder. It is a small local app window that serves the working source in this project. It is not installed into Applications, and it does not create or update a GitHub release.
+Open `preview/OpenRapoo Preview.app` directly in Finder. It is a small local app window that serves the working source in this project. It is not installed into Applications, and it does not create or update a GitHub release.
 
 - UI changes in `app/public/`: save, then press Command+R in the preview window. The same live UI is available at http://127.0.0.1:8760/ while the preview app is running.
 - Backend/module changes used by `app/server.mjs`: quit the preview with Command+Q and reopen it.
@@ -23,7 +23,7 @@ This uses the existing Apple compiler and local Node runtime. Nothing is install
 
 The native Mac test reads only the matching receiver's known mouse report interface, in shared mode, for six seconds. It retains timestamps only, sends no output reports, captures no keyboard input, and stops automatically. Pauses over 50 ms and intervals under 0.25 ms are excluded; fewer than 100 usable intervals produces no estimate. This is an estimate of observed moving-report arrival timing, not firmware readback or proof of USB bus polling frequency. It is currently a Mac-only diagnostic.
 
-If macOS denies access, open System Settings → Privacy & Security → Input Monitoring and allow **Rapoo Local Preview** (or its runtime if macOS lists that separately), then quit and reopen the preview. Permissions are never enabled automatically. If another app name appears in a permission prompt, verify it is the preview/runtime before allowing it.
+If macOS denies access, open System Settings → Privacy & Security → Input Monitoring and allow **OpenRapoo Preview** (or its runtime if macOS lists that separately), then quit and reopen the preview. Permissions are never enabled automatically. If another app name appears in a permission prompt, verify it is the preview/runtime before allowing it.
 
 A web tracker can measure browser-dispatched events rather than all device reports. Chrome combines continuous input around display frames: https://developer.chrome.com/blog/aligning-input-events/ . A flat 120 Hz result alone therefore does not establish whether a rate command worked. Rapoo advertises up to 1000 Hz for the 2.4 GHz connection: https://shop.rapoo.com/products/rapoo-mt760-multi-device-wireless-mouse . Hardware/firmware behavior must still be checked on this receiver.
 
@@ -42,3 +42,7 @@ Battery reads run on connection and each visible minute; use the refresh arrow b
 The preview has a new original mouse-shaped app icon, also used for the favicon/header logo. The Mac ICNS and Windows ICO are built from `app/public/assets/app-icon.svg`. To change it, edit the SVG, run `scripts/build-icons.mjs` with portable Node on this Mac, and rebuild the preview. These changes remain local pending your testing and approval.
 
 The Dock/taskbar follow-up sets the Mac application icon explicitly at launch. Windows uses the embedded mouse ICO and a stable AppUserModelID shared with installer shortcuts so the running taskbar entry groups with its shortcut. This follow-up is included in the source after f2a40b1; Windows visual verification is pending. Publishing an app release still requires separate owner approval.
+
+## Left/right click assignments
+
+These two action dropdowns start locked. Tick the explicit unlock checkbox, choose an action, then Apply. Switching controls or a successful apply/preview clears the unlock again. A non-default primary assignment cannot be sent without explicit consent; the native API checks it too. Reset selection chooses the standard action; Apply restores that standard click without requiring unlock. Keep another way to click available when intentionally remapping a primary button.

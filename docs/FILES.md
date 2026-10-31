@@ -1,20 +1,20 @@
 # Source file guide
 
-This lists the files selected for the next source package (local working copy after 0.2.0). Installed apps use native windows with hidden, owned local services; developer scripts are separate.
+This lists the files selected for the OpenRapoo source package. Installed apps use native windows with hidden, owned local services; developer scripts are separate.
 
 | File | Purpose |
 | --- | --- |
-| `README.md` | Current installation, features and validation scope for desktop release 0.2.0. |
+| `README.md` | Current installation, features and validation scope for OpenRapoo. |
 | `LICENSE` | MIT license for original project source; points out separate Node licensing and excluded vendor material. |
 | `THIRD_PARTY_NOTICES.md` | Node and WebView2 licensing, restored photo attribution and excluded original research inputs. |
 | `.gitignore` | Excludes original inputs, portable runtimes, generated disassembly, logs, OS metadata and dist archives from Git. |
-| `.github/workflows/release.yml` | Builds native desktop windows, runs tests/window lifecycle checks and creates Mac DMG/Windows setup artifacts; no automatic publication. |
+| `.github/workflows/release.yml` | Builds native desktop windows, runs tests/window lifecycle checks and creates Mac DMG/Windows setup artifacts; publishes only on an explicit release tag or manual release request. |
 | `start-macos.command` | Selects the bundled runtime for the Mac architecture and starts the browser launcher. |
 | `start-windows.cmd` | Runs the bundled Windows Node runtime; portable fallback when no compiled launcher is available. |
 | `start-linux.sh` | Source-only Linux launcher; requires a separately supplied portable runtime. |
 | `test-macos.command` | Runs the Node test suite using the local portable Mac runtime. |
 | `docs/FILES.md` | This exhaustive source-file guide and generated package layout. |
-| `docs/PUBLISHING.md` | Native Mac/Windows package builds, installer behavior and private GitHub workflow. |
+| `docs/PUBLISHING.md` | Native Mac/Windows package builds, installer behavior and GitHub workflow. |
 | `docs/DEVELOPMENT.md` | Current architecture, source workflow, native lifecycle and polling tests. |
 | `research/PROTOCOL.md` | Report evidence, memory addresses, transfer semantics, confidence and unknown readback behavior. |
 | `research/BUTTONS-AND-SCROLL.md` | Historical button/scroll research; fixed-line scrolling was removed in 0.2.0. |
@@ -22,6 +22,7 @@ This lists the files selected for the next source package (local working copy af
 | `app/data/protocol-fixture.json` | Stripped 107-transfer protocol fixture for startup, developer explorer and synthetic parser tests; excludes host metadata and raw capture. |
 | `app/native/macos-hid.mjs` | Native receiver discovery, descriptors, probe and BA output reports through IOKit/CoreFoundation using Node FFI. |
 | `app/package.json` | Project identity/version and optional Node script aliases; no npm dependencies. |
+| `app/public/action-picker.mjs` | Searchable action menu, grouped choices, keyboard navigation and primary-lock synchronization. |
 | `app/public/app.mjs` | UI behavior, local DPI profile, theme toggle, action selection, writes/previews, logs and native/WebHID transport choice. |
 | `app/public/assets/README.md` | Product photo provenance and copyright attribution. |
 | `app/public/assets/mt760l.webp` | Restored original Rapoo MT760L product photo; separately attributed, not covered by the source MIT license. |
@@ -47,7 +48,7 @@ This lists the files selected for the next source package (local working copy af
 | `scripts/desktop-server.mjs` | Desktop-owned background service; monitors its parent and exits after window/app shutdown without starting a terminal or browser. |
 | `scripts/evidence.mjs` | Research-only capture/binary hashes, PE exports and evidence summaries from separately supplied local vendor inputs. |
 | `scripts/extract-profile-candidates.mjs` | Research-only extraction of compressed candidate button/profile resources from supplied A HUB.exe. |
-| `scripts/fetch-runtime.mjs` | GitHub-only pinned Node archive download/verification, into labeled minimal platform runtime folders. |
+| `scripts/fetch-runtime.mjs` | Local/CI pinned Node archive download/verification, into labeled minimal platform runtime folders. |
 | `scripts/inspect-disassembly.mjs` | Research-only address-based disassembly annotations; requires local RapooDevice.dll and generated disassembly. |
 | `scripts/launch-app.mjs` | Source-only developer browser launcher; not used by installed desktop apps. |
 | `scripts/package-release.mjs` | Stages native desktop apps, compiles platform windows/helpers, packages ZIP/DMG/setup and creates file manifests/checksums. |
@@ -79,4 +80,4 @@ This lists the files selected for the next source package (local working copy af
 
 Mac app bundles contain their native executable, shared app/resources and matching portable Node runtime/license. Windows bundles additionally contain compiled windows-hid.exe, WebView2 loader/assemblies and SDK license. Mac DMG and Windows setup provide normal install flows. Each archive has an internal manifest and adjacent SHA-256 sidecar.
 
-Original rapoo-re inputs, generated research and personal notes remain local and excluded from packages. Only the two minimal Node runtimes and a regenerable build cache remain in the local toolchain. Old duplicate builds and unused Ghidra/Windows Java/REA/npm tools were deleted with user approval.
+Original rapoo-re inputs, generated research and personal notes remain local and excluded from packages. Desktop runtime packages additionally exclude app tests, native Swift source, Windows-side Mac HID source, and research scripts; the source ZIP retains them. README images live in docs/screenshots/ and travel with source documentation. Desktop bundles retain license notices and a short installation README, rather than source/research guides and screenshots. Local upload/release proof images are archived under docs/archive/. Only the two minimal Node runtimes and a regenerable build cache remain in the local toolchain. Generated build outputs and caches remain local.
