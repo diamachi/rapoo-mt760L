@@ -1,6 +1,12 @@
 name: Build desktop apps
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to publish after checks pass (leave empty for build only)'
+        required: false
+        default: ''
+        type: string
   push:
     tags: ['v*']
 permissions:
@@ -85,3 +91,35 @@ jobs:
             dist/*setup.exe
             dist/*.sha256
           if-no-files-found: error
+  publish:
+    if: github.event_name == 'push' || inputs.release_tag != ''
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Rapoo-Local-*
+          merge-multiple: true
+          path: release-files
+      - name: Verify checksums and publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REQUESTED_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          tag="$REQUESTED_TAG"
+          if [ "$GITHUB_EVENT_NAME" = push ]; then tag="$GITHUB_REF_NAME"; fi
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$ ]] || { echo 'Invalid release tag'; exit 1; }
+          version=$(node -p 'JSON.parse(require("fs").readFileSync("app/package.json")).version')
+          [[ "$tag" = "v$version" || "$tag" = "v$version-"* ]] || { echo 'Tag must match app version'; exit 1; }
+          (cd release-files && sha256sum -c ./*.sha256)
+          test -f "release-files/Rapoo-Local-$version-macos-arm64.dmg"
+          test -f "release-files/Rapoo-Local-$version-windows-x64-setup.exe"
+          flags=()
+          if [[ "$tag" = *-* ]]; then flags+=(--prerelease); fi
+          gh release create "$tag" release-files/* --target "$GITHUB_SHA" --title "Rapoo Local $tag" --notes-file docs/RELEASE-NOTES.md "${flags[@]}"
