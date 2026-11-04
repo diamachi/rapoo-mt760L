@@ -21,7 +21,7 @@ class HidBridge {
     [DllImport("hid.dll")] static extern bool HidD_GetPreparsedData(SafeFileHandle device, out IntPtr data);
     [DllImport("hid.dll")] static extern bool HidD_FreePreparsedData(IntPtr data);
     [DllImport("hid.dll")] static extern int HidP_GetCaps(IntPtr data, out Caps caps);
-    [DllImport("hid.dll")] static extern int HidP_GetValueCaps(int type, IntPtr caps, ref ushort length, IntPtr data);
+    [DllImport("hid.dll")] static extern int HidP_InitializeReportForID(int type, byte reportId, IntPtr data, [Out] byte[] report, uint length);
     [DllImport("hid.dll", SetLastError=true)] static extern bool HidD_SetOutputReport(SafeFileHandle device, byte[] report, int length);
     [DllImport("hid.dll", SetLastError=true)] static extern bool HidD_GetInputReport(SafeFileHandle device, byte[] report, int length);
     [DllImport("setupapi.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern IntPtr SetupDiGetClassDevs(ref Guid guid, IntPtr enumerator, IntPtr parent, uint flags);
@@ -32,19 +32,27 @@ class HidBridge {
     class Device {
         public string path, id;
         public bool compatible;
-        public ushort outputBytes;
-        public object Public() { return new {id, compatible, vendorId=0x24ae, productId=0x1870, productName="Rapoo MT760L receiver", outputReportBytes=outputBytes, reportId=0xba}; }
+        public ushort outputBytes, usagePage, usage;
+        public string detectionError;
+        public object Public() { return new {id, compatible, vendorId=0x24ae, productId=0x1870, productName="Rapoo MT760L receiver", outputReportBytes=outputBytes, reportId=compatible?(int?)0xba:null, usagePage, usage, detectionError}; }
     }
     static string Id(string path) { using(var sha=SHA256.Create()) return BitConverter.ToUInt64(sha.ComputeHash(Encoding.UTF8.GetBytes(path.ToLowerInvariant())),0).ToString(CultureInfo.InvariantCulture); }
-    static bool HasReportBA(IntPtr parsed, Caps caps) {
-        if(caps.outputBytes!=32 || caps.outputValues==0)return false;
-        ushort count=caps.outputValues; IntPtr values=Marshal.AllocHGlobal(72*count);
-        try {
-            if(HidP_GetValueCaps(1,values,ref count,parsed)!=0x00110000)return false;
-            int bits=0;
-            for(int i=0;i<count;i++) { IntPtr item=IntPtr.Add(values,72*i); if(Marshal.ReadByte(item,2)==0xba)bits+=(ushort)Marshal.ReadInt16(item,18)*(ushort)Marshal.ReadInt16(item,20); }
-            return bits==248;
-        } finally { Marshal.FreeHGlobal(values); }
+    // The captured BA output is an Array item (91 00), not a Value capability.
+    // InitializeReportForID validates the descriptor in memory; it does not send a report.
+    static bool HasReportBA(Caps caps, Func<byte[], int> initialize) {
+        if(caps.usagePage!=0xff00 || caps.usage!=0x0e || caps.outputBytes!=32)return false;
+        var report=new byte[32];
+        return initialize(report)==0x00110000 && report[0]==0xba;
+    }
+    static void DetectionSelfTest() {
+        var caps=new Caps {usagePage=0xff00,usage=0x0e,outputBytes=32,outputValues=0,outputButtons=1};
+        Func<byte[],int> valid=report=>{report[0]=0xba;return 0x00110000;};
+        if(!HasReportBA(caps,valid))throw new Exception("Array output report was rejected");
+        if(HasReportBA(caps,report=>unchecked((int)0xc0110010)))throw new Exception("Missing BA report was accepted");
+        if(HasReportBA(caps,report=>0x00110000))throw new Exception("Wrong report ID was accepted");
+        caps.outputBytes=8;if(HasReportBA(caps,valid))throw new Exception("Wrong report length was accepted");
+        caps.outputBytes=32;caps.usage=2;if(HasReportBA(caps,valid))throw new Exception("Auxiliary collection was accepted");
+        caps.usage=0x0e;caps.usagePage=1;if(HasReportBA(caps,valid))throw new Exception("Standard mouse/keyboard collection was accepted");
     }
     static List<Device> Devices() {
         var result=new List<Device>();Guid guid;HidD_GetHidGuid(out guid);
@@ -64,12 +72,19 @@ class HidBridge {
                     if(!SetupDiGetDeviceInterfaceDetail(set,ref data,detail,needed,out needed,IntPtr.Zero))continue;
                     string path=Marshal.PtrToStringUni(IntPtr.Add(detail,4));
                     if(path==null || path.IndexOf("vid_24ae&pid_1870",StringComparison.OrdinalIgnoreCase)<0)continue;
+                    var device=new Device {path=path,id=Id(path)};
+                    result.Add(device);
                     using(var handle=CreateFile(path,0,3,IntPtr.Zero,3,0,IntPtr.Zero)) {
-                        if(handle.IsInvalid)continue;
+                        if(handle.IsInvalid) {device.detectionError="Metadata access failed (Windows error "+Marshal.GetLastWin32Error()+")";continue;}
                         var attributes=new Attributes {size=Marshal.SizeOf(typeof(Attributes))};
-                        if(!HidD_GetAttributes(handle,ref attributes) || attributes.vendor!=0x24ae || attributes.product!=0x1870)continue;
-                        IntPtr parsed;if(!HidD_GetPreparsedData(handle,out parsed))continue;
-                        try {Caps caps;if(HidP_GetCaps(parsed,out caps)!=0x00110000)continue;result.Add(new Device {path=path,id=Id(path),compatible=HasReportBA(parsed,caps),outputBytes=caps.outputBytes});}
+                        if(!HidD_GetAttributes(handle,ref attributes) || attributes.vendor!=0x24ae || attributes.product!=0x1870) {device.detectionError="Receiver identity could not be verified";continue;}
+                        IntPtr parsed;if(!HidD_GetPreparsedData(handle,out parsed)) {device.detectionError="HID descriptor unavailable";continue;}
+                        try {
+                            Caps caps;if(HidP_GetCaps(parsed,out caps)!=0x00110000) {device.detectionError="HID capabilities unavailable";continue;}
+                            device.outputBytes=caps.outputBytes;device.usagePage=caps.usagePage;device.usage=caps.usage;
+                            device.compatible=HasReportBA(caps,report=>HidP_InitializeReportForID(1,0xba,parsed,report,(uint)report.Length));
+                            if(!device.compatible)device.detectionError="Not the 32-byte vendor configuration collection with output report BA";
+                        }
                         finally {HidD_FreePreparsedData(parsed);}
                     }
                 } finally {Marshal.FreeHGlobal(detail);}
@@ -90,7 +105,8 @@ class HidBridge {
         try {
             if(args.Length==1 && args[0]=="--self-test") {
                 if(Marshal.SizeOf(typeof(Caps))!=64 || Marshal.SizeOf(typeof(InterfaceData))!=32)throw new Exception("Unexpected x64 HID structure layout");
-                Console.WriteLine(json.Serialize(new {nativeWindowsSelfTest="passed",reportsSent=0}));return 0;
+                DetectionSelfTest();
+                Console.WriteLine(json.Serialize(new {nativeWindowsSelfTest="passed",arrayReportDetection="passed",reportsSent=0}));return 0;
             }
             if(args.Length<1)throw new Exception("Expected list, probe or send");
             var devices=Devices();

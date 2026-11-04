@@ -13,7 +13,7 @@ Edit the source in this workspace; generated installers and app bundles are copi
 - `packaging/windows/Launcher.cs`: WinForms/WebView2 window and hidden child lifecycle.
 - `scripts/desktop-server.mjs`: owned local service on 127.0.0.1:8765, monitors parent liveness. Closing the app terminates its child. No external browser is launched.
 
-Windows WebHID remains a source/browser fallback when no native helper is present. Packaged Windows uses its native helper because the embedded view must not depend on WebHID availability. The native bridge matches VID/PID and a BA output value-cap layout of 248 bits, then sends a full 32-byte output report with HidD_SetOutputReport. It does not register input callbacks.
+Windows WebHID remains a source/browser fallback when no native helper is present. Packaged Windows uses its native helper because the embedded view must not depend on WebHID availability. The native bridge matches VID/PID, the captured vendor collection (usage page FF00, usage 0E), and a 32-byte output report. It validates report BA in memory with HidP_InitializeReportForID before allowing HidD_SetOutputReport. The captured output is an Array main item, so checking only HidP_GetValueCaps can incorrectly reject it. Enumeration includes per-interface capability/access diagnostics without exposing USB device paths. It does not register input callbacks.
 
 ## Settings
 
@@ -27,7 +27,7 @@ sh test-macos.command
 
 Tests use the stripped fixture and synthetic USBPcap reconstruction, plus real HID descriptor fixtures and mocked native API calls. New polling tests compare captured reports exactly and reject unsupported rates or malformed writes. Windows-native mocked server tests exercise session protection and output dispatch. Removal tests ensure old scrolling endpoints are unavailable. No automated tests change the physical mouse.
 
-The Mac executable accepts `--self-test` for bundle layout and `--smoke-test` to launch its actual embedded interface and quit after checking six DPI stages, four polling options and no scrolling section. The Windows GUI has equivalent flags, and its separate HID helper has a structure-layout self-test and read-only enumeration check. A desktop window smoke test also checks that its local child exits.
+The Mac executable accepts `--self-test` for bundle layout and `--smoke-test` to launch its actual embedded interface and quit after checking six DPI stages, four polling options and no scrolling section. The Windows GUI has equivalent flags, and its separate HID helper has a structure-layout and array-report detection self-test plus a read-only enumeration check. A desktop window smoke test also checks that its local child exits.
 
 Builds stay under dist/. Personal documentation stays under personal/ and is ignored locally. The original Rapoo inputs and generated disassembly remain for future research. Only minimal labeled portable build runtimes remain.
 

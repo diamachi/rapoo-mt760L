@@ -6,7 +6,13 @@ export class NativeTransport {
     const status = await this.status();
     if (status.error) throw Error(status.error);
     const device = status.devices.find(d => d.compatible);
-    if (!device) throw Error('Cannot find the MT760L configuration interface (24ae:1870, report BA). Reconnect the 2.4 GHz receiver.');
+    if (!device) {
+      this.log('RECEIVER SCAN', JSON.stringify({ devices: status.devices }));
+      const found = status.devices.length;
+      throw Error(found
+        ? `Found ${found} MT760L HID interface(s), but none exposes the supported configuration report BA. Export device details from Developer mode for diagnosis.`
+        : 'Windows or macOS did not expose an MT760L receiver (24ae:1870). Reconnect the 2.4 GHz receiver, then scan again.');
+    }
     const result = await this.request('/api/native/connect', { token: this.token, body: { id: device.id } });
     this.device = result.device; return this.device;
   }
