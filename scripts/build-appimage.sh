@@ -82,6 +82,5 @@ chmod 755 "$work/appimagetool"
 )
 file "$work/$name.AppImage" | grep -q 'x86-64'
 install -m 755 "$work/$name.AppImage" "$out/$name.AppImage"
-install -m 644 packaging/linux/70-openrapoo.rules "$out/70-openrapoo.rules"
-(cd "$out" && sha256sum "$name.AppImage" 70-openrapoo.rules > "$name.sha256")
+(cd "$out" && sha256sum "$name.AppImage" > "$name.sha256")
 printf '\nBuilt %s/%s.AppImage\n' "$out" "$name"

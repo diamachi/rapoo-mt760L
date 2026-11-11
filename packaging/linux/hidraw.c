@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
         strspn(path + 11, "0123456789") != strlen(path + 11)) return fail("Invalid HID device node");
     int fd = open(path, O_RDWR | O_NONBLOCK | O_CLOEXEC | O_NOFOLLOW);
     if (fd < 0) return fail(errno == EACCES || errno == EPERM
-        ? "Linux denied receiver access. Install the OpenRapoo udev rule, then unplug and reconnect the receiver."
+        ? "Linux denied receiver access. Run the AppImage with --install-udev-rule, then unplug and reconnect the receiver."
         : "Unable to open the Linux receiver. Reconnect the 2.4 GHz receiver.");
     struct hidraw_devinfo info = {0};
     struct hidraw_report_descriptor desc = {0};

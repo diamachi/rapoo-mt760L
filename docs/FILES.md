@@ -14,7 +14,7 @@ This lists the files selected for the OpenRapoo source package. Installed apps u
 | `start-linux.sh` | Source-only Linux launcher; requires a separately supplied portable runtime. |
 | `test-macos.command` | Runs the Node test suite using the local portable Mac runtime. |
 | `docs/FILES.md` | This exhaustive source-file guide and generated package layout. |
-| `docs/LINUX.md` | Docker and native AppImage builds, USB permission setup, testing and manual release upload. |
+| `docs/LINUX.md` | Docker and native AppImage builds, USB permission setup and testing. |
 | `docs/PUBLISHING.md` | Native Mac/Windows package builds, installer behavior and GitHub workflow. |
 | `docs/DEVELOPMENT.md` | Current architecture, source workflow, native lifecycle and polling tests. |
 | `research/PROTOCOL.md` | Report evidence, memory addresses, transfer semantics, confidence and unknown readback behavior. |

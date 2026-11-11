@@ -1,6 +1,16 @@
 #!/bin/sh
 set -eu
 HERE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+if [ "${1:-}" = "--install-udev-rule" ]; then
+  if [ "$#" -ne 1 ]; then
+    echo 'Usage: OpenRapoo.AppImage --install-udev-rule' >&2
+    exit 2
+  fi
+  sudo -- install -m 644 -- "$HERE/70-openrapoo.rules" /etc/udev/rules.d/70-openrapoo.rules
+  sudo -- udevadm control --reload-rules
+  echo 'Receiver access rule installed. Unplug and reconnect the receiver, then open OpenRapoo.'
+  exit 0
+fi
 if [ "$(id -u)" -eq 0 ]; then
   echo 'Run OpenRapoo as your desktop user, not root. See the udev rule for receiver access.' >&2
   exit 1
