@@ -24,8 +24,8 @@ Downloads are cached in `_toolchain/linux-appimage/`. Repeat builds reuse verifi
 ## Run and test
 
 1. In `dist/`, run `sha256sum -c OpenRapoo-1.2.1-linux-x86_64.sha256`.
-2. Run `chmod +x OpenRapoo-1.2.1-linux-x86_64.AppImage` if the file was downloaded, then open it from the file manager or launch it with `./OpenRapoo-1.2.1-linux-x86_64.AppImage`. If FUSE is unavailable, try `APPIMAGE_EXTRACT_AND_RUN=1 ./OpenRapoo-1.2.1-linux-x86_64.AppImage`.
-3. Connect the MT760L 2.4 GHz USB receiver. If Linux denies access, run this one-time setup on the **Linux PC** as your regular user:
+2. Run `chmod +x OpenRapoo-1.2.1-linux-x86_64.AppImage` if the file was downloaded, then open it from the file manager or launch it with `./OpenRapoo-1.2.1-linux-x86_64.AppImage`.
+3. Connect the MT760L 2.4 GHz USB receiver. If Linux denies access, run this one-time setup on the **Linux PC** as your regular user (or sudo if permission denied):
 
    ```sh
    ./OpenRapoo-1.2.1-linux-x86_64.AppImage --install-udev-rule
