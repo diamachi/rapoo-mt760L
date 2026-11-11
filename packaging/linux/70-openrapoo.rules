@@ -1,0 +1,2 @@
+# Allow the active local desktop session to access only this receiver model.
+SUBSYSTEM=="hidraw", KERNEL=="hidraw*", ATTRS{idVendor}=="24ae", ATTRS{idProduct}=="1870", TAG+="uaccess"

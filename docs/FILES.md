@@ -14,12 +14,15 @@ This lists the files selected for the OpenRapoo source package. Installed apps u
 | `start-linux.sh` | Source-only Linux launcher; requires a separately supplied portable runtime. |
 | `test-macos.command` | Runs the Node test suite using the local portable Mac runtime. |
 | `docs/FILES.md` | This exhaustive source-file guide and generated package layout. |
+| `docs/LINUX.md` | Docker and native AppImage builds, USB permission setup, testing and manual release upload. |
 | `docs/PUBLISHING.md` | Native Mac/Windows package builds, installer behavior and GitHub workflow. |
 | `docs/DEVELOPMENT.md` | Current architecture, source workflow, native lifecycle and polling tests. |
 | `research/PROTOCOL.md` | Report evidence, memory addresses, transfer semantics, confidence and unknown readback behavior. |
 | `research/BUTTONS-AND-SCROLL.md` | Historical button/scroll research; fixed-line scrolling was removed in 0.2.0. |
 | `research/POLLING-RATE.md` | DLL addresses, constructor rate mapping, captured report cross-checks and validation limits. |
 | `app/data/protocol-fixture.json` | Stripped 107-transfer protocol fixture for startup, developer explorer and synthetic parser tests; excludes host metadata and raw capture. |
+| `app/native/linux-hid.mjs` | Matches the USB receiver and vendor report in sysfs and dispatches validated operations to the Linux helper. |
+| `app/test/linux-hid.test.mjs` | Synthetic sysfs test for descriptor, receiver ID and USB bus filtering. |
 | `app/native/macos-hid.mjs` | Native receiver discovery, descriptors, probe and BA output reports through IOKit/CoreFoundation using Node FFI. |
 | `app/package.json` | Project identity/version and optional Node script aliases; no npm dependencies. |
 | `app/public/appearance.mjs` | Sends a validated light/dark theme to the native window hosts. |
@@ -56,6 +59,8 @@ This lists the files selected for the OpenRapoo source package. Installed apps u
 | `scripts/fetch-runtime.mjs` | Local/CI pinned Node archive download/verification, into labeled minimal platform runtime folders. |
 | `scripts/inspect-disassembly.mjs` | Research-only address-based disassembly annotations; requires local RapooDevice.dll and generated disassembly. |
 | `scripts/launch-app.mjs` | Source-only developer browser launcher; not used by installed desktop apps. |
+| `scripts/build-appimage.sh` | Verifies pinned runtime inputs, tests the source and produces a Linux x86-64 AppImage and checksums. |
+| `packaging/linux/` | Electron window, HID bridge, desktop entry, udev rule and Docker build environment. |
 | `scripts/package-release.mjs` | Stages native desktop apps, compiles platform windows/helpers, packages ZIP/DMG/setup and creates file manifests/checksums. |
 | `packaging/macos/Info.plist` | Desktop Mac app identity, version, minimum OS and executable entry point. |
 | `packaging/macos/main.swift` | Native AppKit/WKWebView app window, menus, local-only navigation, export save panel and owned child lifecycle; includes self/smoke checks. |

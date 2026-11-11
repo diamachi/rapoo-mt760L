@@ -21,3 +21,7 @@ The restored MT760L photo is copyright Rapoo/the original owner and is not part 
 ## Original research inputs
 
 Vendor executables, DLLs, the raw PCAPNG, generated disassembly and original analysis tools are not distributed with the app. A stripped protocol fixture preserves configuration bytes needed by tests and the developer explorer, excluding original timestamps, IRP pointers and USB host/bus identifiers.
+
+## Linux AppImage
+
+The Linux package includes [Electron 45.3.0](https://github.com/electron/electron/releases/tag/v45.3.0) and its upstream `LICENSE` and `LICENSES.chromium.html` files. The embedded [AppImage type-2 runtime](https://github.com/AppImage/type2-runtime/tree/20251108) is distributed with its upstream license in `AppImage-runtime-LICENSE.txt`. The linked runtime source and build scripts identify its dependencies. AppImage tooling is used only to build the package.

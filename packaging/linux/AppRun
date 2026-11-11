@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+HERE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+if [ "$(id -u)" -eq 0 ]; then
+  echo 'Run OpenRapoo as your desktop user, not root. See the udev rule for receiver access.' >&2
+  exit 1
+fi
+unset ELECTRON_RUN_AS_NODE
+exec "$HERE/usr/lib/openrapoo/openrapoo" "$@"

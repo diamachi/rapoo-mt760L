@@ -93,7 +93,8 @@ jobs:
             dist/*.sha256
           if-no-files-found: error
   publish:
-    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+    # v1.2.0 assets are reviewed and uploaded by the maintainer.
+    if: github.ref_name != 'v1.2.0' && inputs.release_tag != 'v1.2.0' && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && inputs.release_tag != ''))
     needs: package
     runs-on: ubuntu-latest
     permissions:

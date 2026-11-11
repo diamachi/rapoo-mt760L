@@ -253,11 +253,11 @@ await run(async () => {
   const native = new NativeTransport(localRequest, log);
   const status = await native.status();
   measurementAvailable=Boolean(status.measurementAvailable)&&!info.inputMonitoringRequired;
-  $('rate-test-support').textContent=info.inputMonitoringRequired?'Allow Input Monitoring and reopen the app to measure reports.':measurementAvailable?'Native macOS HID · read only':'Native measurement is currently available in the local Mac preview.';
+  $('rate-test-support').textContent=info.inputMonitoringRequired?'Allow Input Monitoring and reopen the app to measure reports.':measurementAvailable?'Native macOS HID · read only':'Native polling measurement is available on macOS.';
   if (status.available) {
     transport = native; nativeMode = true; nativePlatform = status.platform;
     const receiver = status.devices?.find(d => d.compatible);
-    $('support').textContent = 'Native '+(status.platform==='win32'?'Windows':'macOS')+' HID · receiver access';
+    $('support').textContent = 'Native '+({win32:'Windows',darwin:'macOS',linux:'Linux'}[status.platform] || status.platform)+' HID · receiver access';
     if (receiver) {
       setReceiverStatus('detected');
       $('device-state').textContent = '2.4 GHz receiver detected · 24ae:1870';

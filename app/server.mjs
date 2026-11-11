@@ -10,6 +10,7 @@ import { fromHex, validateReport, addressOf } from './src/protocol.mjs';
 import { allowedParameterWrite, requiresPrimaryClickConsent } from './src/buttons.mjs';
 import { summarizeRate } from './src/rate-stats.mjs';
 import { decodeBatteryReport } from './src/battery.mjs';
+import { linuxHidHelper, runLinuxHid } from './native/linux-hid.mjs';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const { version } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 const exec = promisify(execFile);
@@ -26,6 +27,7 @@ export async function runRateMeasurement() {
 }
 export async function runNative(operation, ...args) {
   try {
+    if (process.platform === 'linux') return await runLinuxHid(operation, ...args);
     const windows = process.platform === 'win32';
     const executable = windows ? path.join(root, 'native/windows-hid.exe') : process.execPath;
     const arguments_ = windows ? [operation, ...args] : ['--experimental-ffi', path.join(root, 'native/macos-hid.mjs'), operation, ...args];
@@ -41,7 +43,7 @@ async function readJson(req) {
   return JSON.parse(text || '{}');
 }
 export function createAppServer({ native = runNative, platform = process.platform, measure = runRateMeasurement, development = false, inputMonitoringRequired = process.env.RAPOO_INPUT_MONITORING_REQUIRED === '1' } = {}) {
-  const nativeAvailable = platform === 'darwin' || (platform === 'win32' && (native !== runNative || existsSync(path.join(root, 'native/windows-hid.exe'))));
+  const nativeAvailable = platform === 'darwin' || (platform === 'win32' && (native !== runNative || existsSync(path.join(root, 'native/windows-hid.exe')))) || (platform === 'linux' && (native !== runNative || existsSync(linuxHidHelper)));
   const measurementAvailable = platform === 'darwin' && (measure !== runRateMeasurement || existsSync(rateExecutable));
   const token = randomBytes(32).toString('hex'); let connectedId = null, measuring = false, batteryReading = false, writing = false;
   let batteryCache=null;

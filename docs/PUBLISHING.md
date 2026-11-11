@@ -57,3 +57,5 @@ git push origin v1.2.0
 ```
 
 Use the version actually recorded in `app/package.json`; the example tag is not a request to publish it. A v-prefixed tag runs both platform builds and checks, then publishes installers and checksums. Never move an existing release tag. The browser's manual release form is an alternative, not a requirement.
+
+For the Linux AppImage, see the [Linux build and manual publishing guide](LINUX.md). The `v1.2.0` tag builds Mac and Windows artifacts but skips automated publication so the maintainer can upload the tested Linux files.

@@ -2,7 +2,7 @@
 
 A small desktop app for the **Rapoo MT760L**, connected through its **2.4 GHz USB receiver**. Change DPI, assign buttons, choose a polling rate and check the battery reported by the mouse.
 
-The app uses a native window on macOS and Windows. Normal use needs no terminal, external browser, npm installation or separately installed Node runtime.
+The app opens in its own window on macOS, Windows and Linux. Normal use needs no terminal, external browser, npm installation or separately installed Node runtime.
 
 [Download the latest release](https://github.com/diamachi/rapoo-mt760L/releases) · [Build and release guide](docs/PUBLISHING.md) · [Development guide](docs/DEVELOPMENT.md)
 
@@ -39,7 +39,7 @@ Screenshots are actual local app captures from a hardware-isolated UI preview. D
 | Polling selection | Sends the captured/DLL-backed 125/250/500/1000 Hz configuration over the receiver. |
 | Report-rate measurement | Mac-only, six-second read of mouse-report timestamps; retains no movement coordinates or keyboard input. |
 | Battery | Reads the reported percentage on connection, every visible minute, or manual refresh. Wake the mouse if it times out. |
-| Appearance | Light/Nord dark themes, bundled DM Serif Display/DM Sans typography, responsive type and spacing, and Settings → Interface size (Automatic / Larger / Extra large). Native title bars follow the app theme. |
+| Appearance | Light/Nord dark themes, bundled DM Serif Display/DM Sans typography, responsive type and spacing, and Settings → Interface size (Automatic / Larger / Extra large). Mac and Windows title bars follow the app theme. |
 | Developer tools | Settings → Developer mode, or Cmd/Ctrl+Shift+D: packet explorer, command previews and activity log. |
 | Safe command preview | **Preview writes only** records the command without applying it. Leaving Developer mode turns this option off. |
 
@@ -49,6 +49,8 @@ DPI/button selections are an app profile and suggested defaults, **not live devi
 
 - **Mac Apple silicon, macOS 14+:** open the release DMG, drag **OpenRapoo** into Applications, then open it. Allow Input Monitoring if macOS requires it for receiver access, then quit and reopen.
 - **Windows x64:** run the release `…-windows-x64-setup.exe`, then open **OpenRapoo** from Start. Setup provides uninstall support and adds Microsoft WebView2 only if missing; that prerequisite download needs internet.
+
+- **Linux x86-64:** run the AppImage. For the one-time receiver permission rule, build instructions and test steps, see the [Linux guide](docs/LINUX.md).
 
 ### macOS: unsigned app and Input Monitoring
 
@@ -62,7 +64,7 @@ Then open **OpenRapoo** again. This removes its download quarantine attribute; i
 
 On first launch without access, OpenRapoo prompts for **Input Monitoring**. Choose **Open Input Monitoring**, enable **OpenRapoo** in **System Settings → Privacy & Security → Input Monitoring**, then quit and reopen the app. If it is not listed, use the **+** button to add `/Applications/OpenRapoo.app`. Choose **Not Now** to leave permission unchanged; the in-app help panel lets you reopen Settings later. A source-linked build is named **OpenRapoo Preview** instead.
 
-Closing the window stops the local service. The app works locally without an account or cloud service. Use the USB receiver: Bluetooth, Intel Mac, Linux desktop packaging and other mouse models are not verified.
+Closing the window stops the local service. The app works locally without an account or cloud service. Use the USB receiver: Bluetooth, Intel Mac and other mouse models are not verified. Linux hardware behavior needs testing.
 
 The original Mac/Windows packages were hardware-tested; native Mac polling and battery reporting were checked separately. CI checks source, both native windows, service shutdown and Windows install/uninstall. Windows battery behavior and the taskbar icon still need physical/visual testing.
 
@@ -77,6 +79,7 @@ The source ZIP and Git repository **do not include runtimes**. This workspace ma
 | Source tests / browser preview | Portable **Node 26.4.0**, a matching OS/architecture, and a browser. Native receiver control in the browser preview is supported on Mac; Windows browser fallback uses Chrome/Edge WebHID. |
 | Mac app and DMG | Apple silicon Mac, macOS 14+, portable Node, **already available Apple Command Line Tools** (`xcrun swiftc`), and macOS system tools `zip`/`hdiutil`. |
 | Windows app and installer | Windows x64 builder (CI uses Server 2025), portable Node, existing **.NET Framework x64 compiler**, PowerShell, and **Inno Setup 6**. WebView2 SDK files are downloaded to the project cache. |
+| Linux AppImage | Docker with the Node 22 Bookworm image, or Linux with the tools listed in the [Linux guide](docs/LINUX.md). |
 | Icon regeneration only | Mac with existing Apple tools: AppKit/Swift, `sips` and `iconutil`. Generated ICNS/ICO assets are already supplied. |
 
 Portable Node replaces a global Node installation. Apple/.NET compilers and Inno Setup are platform build prerequisites; they are not bundled portable tools. If they are unavailable, use GitHub Actions instead of installing anything on this Mac.

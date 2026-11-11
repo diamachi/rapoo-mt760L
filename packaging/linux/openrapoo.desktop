@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=OpenRapoo
+Comment=Configure the Rapoo MT760L mouse
+Exec=openrapoo
+Icon=openrapoo
+Terminal=false
+Categories=Settings;
